@@ -2,8 +2,7 @@ import os
 import time
 from pandas import read_csv, DataFrame
 from glob import glob
-from Stage1_Code.create_designmat import design_mid
-from Stage1_Code.pull_regressors import regressors
+from Stage1_Code.designmat_regressors_define import create_design_mid,pull_regressors
 from nilearn.glm.first_level import FirstLevelModel
 from itertools import product
 
@@ -75,10 +74,10 @@ for subj in subjects:
 
             print(f'\t\t 2/4 Create Regressors & Design Matrix for GLM')
             # get list of regressors
-            conf_regressors = regressors(confound_path=conf_path, regressor_type=motion)
+            conf_regressors = pull_regressors(confound_path=conf_path, regressor_type=motion)
 
             # run to create design matrix
-            design_matrix = design_mid(events_df=events_df, bold_tr=boldtr, num_volumes=numvols,
+            design_matrix = create_design_mid(events_df=events_df, bold_tr=boldtr, num_volumes=numvols,
                                        onset_label=model_types[model][0],
                                        duration_label=model_types[model][1],
                                        conf_regressors=conf_regressors,
