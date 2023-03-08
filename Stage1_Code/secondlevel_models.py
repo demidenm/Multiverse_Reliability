@@ -75,8 +75,8 @@ permutation_list = read_csv(f'{proj_loc}/model_permutations.csv',
 
 for contrast in contrasts:
     print(f'\t Working on contrast map: {contrast}')
-    for fwhm, motion, model in permutation_list:
-        model='fwhm-{}_mot-{}_mod-{}'.format(fwhm, motion, model)
+    for fwhm, motion, model, mask_type in permutation_list:
+        model='mask-{}_mot-{}_mod-{}_fwhm-{}'.format(mask_type,motion, model,fwhm)
 
         # find all contrast fixed effect maps for model permutation across subjects
         fix_maps = sorted(glob(f'{fix_dir}/*_{sess}_task-{task}_effect-fixed_'

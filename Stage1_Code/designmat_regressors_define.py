@@ -1,4 +1,4 @@
-from pandas import read_csv, DataFrame
+from pandas import read_csv, DataFrame, concat
 from numpy import arange
 from nilearn.glm.first_level import make_first_level_design_matrix
 from glob import glob
