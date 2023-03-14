@@ -83,11 +83,10 @@ contrasts = [
 fwhm = [4,5]
 mot = ["opt1", "opt5"]
 mod_type = ["AntMod", "FixMod"]
-mask_type = ["desc-brain_mask", "label-GM_probseg"]
 
 # note, didn't save in FirstLvl due to need smoothing to occur outside of list
-model_permutations = DataFrame(data=list(product(fwhm, mot, mod_type, mask_type)),
-                               columns=["fwhm","motion","mod_type","mask_type"])
+model_permutations = DataFrame(data=list(product(fwhm, mot, mod_type)),
+                               columns=["fwhm","motion","mod_type"])
 model_permutations.to_csv(f'{proj_loc}/model_permutations.csv')
 permutation_list = read_csv(f'{proj_loc}/model_permutations.csv',
                             header=None, index_col=0).values.tolist()[1:]
@@ -96,10 +95,10 @@ permutation_list = read_csv(f'{proj_loc}/model_permutations.csv',
 for subj in subjects:
     start_time = time.time()
     print(f'\t Working on subject: {subj}')
-    for fwhm, motion, model, mask_type in permutation_list:
-        print('\t\t Running model using: {}, {}, {}'.format(motion, model, mask_type))
+    for fwhm, motion, model in permutation_list:
+        print('\t\t Running model using: {}, {}, {}'.format(fwhm, motion, model))
 
-        model='mask-{}_mot-{}_mod-{}_fwhm-{}'.format(mask_type,motion, model,fwhm)
+        model='mask-brain_mot-{}_mod-{}_fwhm-{}'.format(motion, model,fwhm)
         fixed_effect(subject=subj, session='ses-01', task_type='mid',
                      contrast_list=contrasts,firstlvl_indir=in_dir, fixedeffect_outdir=fix_dir,
                      model_permutation=model, save_beta = True, save_var = True, save_tstat = False)
