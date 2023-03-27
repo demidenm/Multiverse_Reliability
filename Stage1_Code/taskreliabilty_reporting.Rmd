@@ -141,7 +141,6 @@ for (row in 1:nrow(var_permutations)) {
 releving and specifying factors so things are interpretable in the heiarchical models.
 ```{r}
 # level/relabel
-df$fwhm_r <- as.numeric(df$fwhm)
 df$motion = relevel(as.factor(df$motion), ref = "None", 
                      levels = c("None","Censor_mfd","Excl_mFD",
                                 "Regress_1st8aCompCor","Regress_Derivatives",
@@ -315,41 +314,14 @@ summary_icc %>%
 
 ## Fitting HLM
 
-Below using `lmer` to fit HLM model. One model has random intercept (study), second model has random intercept (study) and random slope (FWHM). Reporting using [tab_model](https://www.rdocumentation.org/packages/sjPlot/versions/2.8.4/topics/tab_model)
+Below using `lmer` to fit HLM model. The model has random intercept (sample). e.g., Level 1 model: Median ICC ~ Beta Estimates. Level 2 model: Random intercept. For reproducible reporting using [tab_model](https://www.rdocumentation.org/packages/sjPlot/versions/2.8.4/topics/tab_model)
 
-**Level 1 model**
-
-$MedianICC_{ij} = \beta_{0_j} + \beta_{1_j} \times \text{fwhm}_{ij} + \beta_{2_j} \times \text{motion}_{ij} + \beta_{3_j} \times \text{modeltype}_{ij} + \beta_{4_j} \times \text{contrast}_{ij} + \epsilon_{ij}$
-
-**Level 2 model**
-
-$\beta_{0_j} = \gamma_{00} + u_{0_j}$
-
-$\beta_{1_j} = \gamma_{10} + u_{1_j}$
-
-$\beta_{2_j} = \gamma_{20} + u_{2_j}$
-
-$\beta_{3_j} = \gamma_{30} + u_{3_j}$
-
-$\beta_{4_j} = \gamma_{40} + u_{4_j}$
-
-`Notes:
-
-med_icc_ij is the outcome for the ith model in the jth sample
-β0_j is the intercept for the jth sample
-fwhm_r_ij, motion_ij, modeltype_ij, and contrast_ij are the predictor variables for the ith model in the jth sample
-β1_j, β2_j, β3_j, and β4_j: corresponding coefficients for the jth sample
-ε_ij is the within-sample error term
-
-
-γ00, γ10, γ20, γ30, and γ40 are the fixed effects intercept and slopes for the predictors; u0_j, u1_j, u2_j, u3_j, and u4_j are the sample-level residuals (random effects) for the intercept and the four slopes.`
 
 
 ```{r warning=FALSE}
-model = lmer(med_icc ~ fwhm_r + motion + modeltype + contrast + (1 | study), data = df)
-model_rndslp = lmer(med_icc ~ fwhm_r + motion + modeltype + contrast + (1+fwhm_r| study), data = df)
+model = lmer(med_icc ~ fwhm + motion + modeltype + contrast + (1 | study), data = df)
 
-tab_model(model, model_rndslp)
+tab_model(model)
 ```
 
 Using [emmeans](https://www.rdocumentation.org/packages/emmeans/versions/1.3.2/topics/emmeans-package) to control type I error rate of controls via [Tukey's Honest Significant Test](https://en.wikipedia.org/wiki/Tukey%27s_range_test)
@@ -359,19 +331,26 @@ Using [emmeans](https://www.rdocumentation.org/packages/emmeans/versions/1.3.2/t
 mod1_lmer_obs = as.numeric(summary(model)[3]$devcomp$dims[1])
 emm_options(lmerTest.limit = mod1_lmer_obs)
 
-# contrast contrast
-mod1_thsd = emmeans(object = model, specs = pairwise ~ contrast, pbkrtest.limit = mod1_lmer_obs)
+
+# contrast fwhm
+mod1_thsd = emmeans(object = model, specs = pairwise ~ fwhm, pbkrtest.limit = mod1_lmer_obs)
 mod1_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: FWHM") %>%  kable_styling()
+
+
+# contrast task contrast
+mod2_thsd = emmeans(object = model, specs = pairwise ~ contrast, pbkrtest.limit = mod1_lmer_obs)
+mod2_thsd$contrasts %>% summary(infer = TRUE) %>% 
   kbl(digits = 4, caption = "Contrast Tukey HSD: Contrast") %>%  kable_styling()
 
 # contrast motion
-mod1_thsd = emmeans(object = model, specs = pairwise ~ motion, pbkrtest.limit = mod1_lmer_obs)
-mod1_thsd$contrasts %>% summary(infer = TRUE) %>% 
+mod3_thsd = emmeans(object = model, specs = pairwise ~ motion, pbkrtest.limit = mod1_lmer_obs)
+mod3_thsd$contrasts %>% summary(infer = TRUE) %>% 
   kbl(digits = 4, caption = "Contrast Tukey HSD: Motion Corr") %>%  kable_styling()
 
 # contrast modeltype
-mod1_thsd = emmeans(object = model, specs = pairwise ~ modeltype, pbkrtest.limit = mod1_lmer_obs)
-mod1_thsd$contrasts %>% summary(infer = TRUE) %>% 
+mod4_thsd = emmeans(object = model, specs = pairwise ~ modeltype, pbkrtest.limit = mod1_lmer_obs)
+mod4_thsd$contrasts %>% summary(infer = TRUE) %>% 
   kbl(digits = 4, caption = "Contrast Tukey HSD: Model Type ") %>%  kable_styling()
 ```
 
