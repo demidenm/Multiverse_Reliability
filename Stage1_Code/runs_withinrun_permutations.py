@@ -57,9 +57,6 @@ for subj in subjects:
 
             # get path to confounds from fmriprep, func data + mask
             conf_path = f'{deriv_path}/{subj}/ses-1/func/{subj}_ses-1_task-mid_{run}_desc-confounds_timeseries.tsv'
-            mask_path = glob(
-                f'{deriv_path}/{subj}/ses-1/anat/{subj}_ses-1'
-                f'_space-MNI152NLin2009cAsym_res-2_desc-brain_mask.nii.gz')[0]
             nii_path = glob(
                 f'{deriv_path}/{subj}/ses-1/func/{subj}_ses-1_task-mid_{run}'
                 f'_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz')[0]
@@ -78,7 +75,6 @@ for subj in subjects:
             print('\t\t 3/4 Mask Image, Fit GLM model ar1 autocorrelation')
             # using ar1 autocorrelation (FSL prewhitening), drift model
             fmri_glm = FirstLevelModel(subject_label=subj,
-                                       mask_img=mask_path,
                                        t_r=boldtr, smoothing_fwhm=smooth,
                                        standardize=False, noise_model='ar1', drift_model=None, high_pass=None
                                        # cosine 0:3 included from fmriprep in desing mat based on 128 s calc

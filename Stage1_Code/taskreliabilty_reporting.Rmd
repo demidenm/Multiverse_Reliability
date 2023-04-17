@@ -319,8 +319,12 @@ Below using `lmer` to fit HLM model. The model has random intercept (sample). e.
 
 
 ```{r warning=FALSE}
-model = lmer(med_icc ~ fwhm + motion + modeltype + contrast + (1 | study), data = df)
+# including random slope & intercept for each
+#model = lmer(med_icc ~ fwhm + motion + modeltype + contrast + (fwhm + motion + modeltype + contrast | study), data = df)
 
+
+# if the above model does not converge, random intercept only model will be used:
+model = lmer(med_icc ~ fwhm + motion + modeltype + contrast + (1 | study), data = df)
 tab_model(model)
 ```
 
@@ -834,11 +838,19 @@ colnames(eff_data) <- c("Sub","Run",
                         "LarGainvBase_CueMod", "LarGainvBase_AntMod", "LarGainvBase_FixMod",
                         "SmGainvBase_CueMod", "SmGainvBase_AntMod", "SmGainvBase_FixMod")
 
+col_names = c("LarGain_CueMod", "LarGain_AntMod", "LarGain_FixMod",
+                        "SmGain_CueMod", "SmGain_AntMod", "SmGain_FixMod",
+                        "LarGainvBase_CueMod", "LarGainvBase_AntMod", "LarGainvBase_FixMod",
+                        "SmGainvBase_CueMod", "SmGainvBase_AntMod", "SmGainvBase_FixMod")
+eff_data[, col_names] <- sapply(eff_data[,col_names], as.numeric)
+
+
+
 eff_data_long = eff_data %>% 
-  gather("Model","Eff",LarGain_CueMod:SmGainvBase_FixMod) %>%  
+  gather("Model","Eff",all_of(col_names)) %>%  
   separate(col = Model, into = c("Con","Model"), sep = '_')
 
-eff_data_long$Eff <- as.integer(eff_data_long$Eff)
+
 
 # plotting
 # plot by run and contrast
@@ -865,12 +877,10 @@ plot_runcon = eff_data_long %>% ggplot(aes(x = Con, y = Eff, colour = Con, fill 
   scale_fill_brewer(palette = 'Dark2') +
   scale_color_brewer(palette = 'Dark2') +
   guides(fill = 'none', color = 'none') +
-  labs(title = "Estimated Efficiency by Run & Contrast",
-  caption = "LGain: Large Gain > Neut; SGain: Small Gain > Neut;
-  LGain v BL: Large Gain > Implicit Baseline; SGain v BL: Small Gain > Implicit Baseline")+
+  labs(title = "Estimated Efficiency by Run & Contrast")+
   ylab("Estimated Effieincy")+
   scale_x_discrete(name = "Model Type",
-                   labels = c("LGain","SGain","LGain v BL","SGain v BL"))+
+                   labels = c("LGain","LGain v BL","SGain","SGain v BL"))+
   facet_wrap(~Run + Model)+
   theme(text = element_text(family = "Times New Roman"),
         axis.text = element_text(size = 10),
@@ -881,4 +891,5 @@ plot_runcon = eff_data_long %>% ggplot(aes(x = Con, y = Eff, colour = Con, fill 
 
 plot_runcon
 ```
+
 
