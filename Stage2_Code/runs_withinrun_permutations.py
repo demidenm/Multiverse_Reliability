@@ -1,0 +1,177 @@
+import argparse
+import numpy as np
+import pandas as pd
+import nibabel as nib
+from glob import glob
+from Stage2_Code.designmat_regressors_define import (
+    create_design_mid, pull_regressors, eff_estimator)
+from nilearn.glm.first_level import FirstLevelModel
+from itertools import product
+
+
+# relabel column names to match templates code for ABCD/MLS
+dict_renamecols_abcd = {
+    'Cue.OnsetTime': 'CUE_ONSET',
+    'Cue.Duration': 'CUE_DURATION',
+    'Anticipation.OnsetTime': 'FIXATION_ONSET',
+    'Anticipation.Duration': 'FIXATION_DURATION',
+    'Feedback.OnsetTime': 'FEEDBACK_ONSET',
+    'FeedbackDuration': 'FEEDBACK_DURATION',
+    'Condition': 'TRIAL_TYPE',
+    'Result': 'TRIAL_RESULT'
+}
+
+dict_renamecols_mls = {
+    'Cue.OnsetTime': 'CUE_ONSET',
+    'Cue.Duration': 'CUE_DURATION',
+    'Fix.OnsetTime': 'FIXATION_ONSET',
+    'Fix.Duration': 'FIXATION_DURATION',
+    'Feedback.OnsetTime': 'FEEDBACK_ONSET',
+    'Feedback.Duration': 'FEEDBACK_DURATION',
+    'Condition': 'TRIAL_TYPE',
+    'Result': 'TRIAL_RESULT'
+}
+
+parser = argparse.ArgumentParser(description="Script to run first level task models w/ nilearn")
+
+parser.add_argument("sample", help="sample type, ahrb, abcd or mls?")
+parser.add_argument("sub", help="subject name, sub-XX, include entirety with 'sub-' prefix")
+parser.add_argument("task", help="task type -- e.g., mid, reward, etc")
+parser.add_argument("ses", help="session, include the session type without prefix, e.g., 1, 01, baselinearm1")
+parser.add_argument("numvols", help="The number of volumes for BOLD file, e.g numeric")
+parser.add_argument("boldtr", help="the tr value for the datasets in seconds, e.g. .800, 2.0, 3.0")
+parser.add_argument("beh_path", help="Path to the behavioral (.tsv) directory/files for the task")
+parser.add_argument("fmriprep_path", help="Path to the output directory for the fmriprep output")
+parser.add_argument("mni152_brainmask", help="path the to the binarized MNI152 brain mask")
+parser.add_argument("output", help="output folder where to write out and save information")
+
+args = parser.parse_args()
+
+# Now you can access the arguments as attributes of the 'args' object.
+sample = args.sample
+subj = args.sub
+task = args.task
+ses = args.ses
+numvols = args.numvols
+boldtr = args.boldtr
+beh_path = args.beh_path
+fmriprep_path = args.fmriprep_path
+mni152_brainmask = args.mni152_brainmask
+scratch_out = args.output
+
+# model design options, contrasts and weights setup
+model_types = {
+    "AntMod": ['CUE_ONSET', "ANTICIPATION_DURATION"],
+    "FixMod": ['FIXATION_ONSET', "FIXATION_DURATION"],
+    "CueMod": ['CUE_ONSET', 'CUE_DURATION']
+}
+
+contrasts = {
+    'Lgain-Neut': 'LargeGain - NoMoneyStake',
+    'Sgain-Neut': 'SmallGain - NoMoneyStake',
+    'Lgain-Base': 'LargeGain',
+    'Sgain-Base': 'SmallGain',
+}
+
+contrast_weights = {
+    'Lgain-Neut': {'LargeGain': 1, 'NoMoneyStake': -1},
+    'Sgain-Neut': {'SmallGain': 1, 'NoMoneyStake': -1},
+    'Lgain-Base': {'LargeGain': 1},
+    'Sgain-Base': {'SmallGain': 1},
+}
+
+runs = ['01', '02']
+
+# Model permutations
+fwhm = [3, 4]#, 5]
+mot = ["opt1", "opt2"] #, "opt3", "opt4", "opt5"]
+mod_type = ["CueMod", "AntMod"]#, "FixMod"]
+permutation_list = list(product(fwhm, mot, mod_type))
+
+for run in runs:
+    print(f'\tStarting {subj} {run}.')
+    # set-up combined efficieny df
+    comb_eff = pd.DataFrame(columns=[np.hstack(('model', list(contrast_weights.keys())))])
+    for smooth, motion, model in permutation_list:
+        print('\t\t Running model using: {}, {}, {}'.format(fwhm, motion, model))
+        print('\t\t 1/5 Load Files & set paths')
+        # import behavior events .tsv from data path
+        events_df = pd.read_csv(f'{beh_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_{run}_events.tsv',
+                                sep='\t')
+        if sample == 'ahrb':
+            events_df = events_df.rename(columns=dict_renamecols_abcd)
+        elif sample == 'mls':
+            events_df = events_df.rename(columns=dict_renamecols_mls)
+        else:
+            continue
+
+        # get path to confounds from fmriprep, func data + mask
+        conf_path = f'{fmriprep_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_desc-confounds_timeseries.tsv'
+        nii_path = glob(
+            f'{fmriprep_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}'
+            f'_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz')[0]
+
+        print('\t\t 2/5 Create Regressors & Design Matrix for GLM')
+        # get list of regressors
+        conf_regressors = pull_regressors(confound_path=conf_path, regressor_type=motion)
+
+        # run to create design matrix
+        design_matrix = create_design_mid(events_df=events_df, bold_tr=boldtr, num_volumes=numvols,
+                                          onset_label=model_types[model][0],
+                                          duration_label=model_types[model][1],
+                                          conf_regressors=conf_regressors,
+                                          hrf_model='spm', stc=False)
+
+        print('\t\t 3/5 Estimate design efficiency')
+        # efficiency estimates
+        con_matrix = pd.DataFrame(columns=design_matrix.columns)
+
+        for contrast_name, contrast_dict in contrast_weights.items():
+            con_matrix = con_matrix.append(pd.Series(contrast_dict, name=contrast_name))
+
+        con_matrix = con_matrix.fillna(0)
+
+        series_eff = pd.DataFrame(
+            np.hstack((model,
+                       eff_estimator(np.array(design_matrix), np.array(con_matrix)))).reshape(1, -1),
+            columns=[np.hstack(('model', list(contrast_weights.keys())))]
+        )
+
+        comb_eff = pd.concat([comb_eff, series_eff])
+        eff_out_path = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_{run}_efficiency.tsv'
+        comb_eff.to_csv(eff_out_path, index=False)
+
+        print('\t\t 4/5 Mask Image, Fit GLM model ar1 autocorrelation')
+        # using ar1 autocorrelation (FSL prewhitening), drift model
+        fmri_glm = FirstLevelModel(subject_label=subj, mask_img=mni152_brainmask,
+                                   t_r=boldtr, smoothing_fwhm=smooth,
+                                   standardize=False, noise_model='ar1', drift_model=None, high_pass=None
+                                   # cosine 0:3 included from fmriprep in design mat based on 128s calc
+                                   )
+
+        # Run GLM model using set paths and calculate design matrix
+        run_fmri_glm = fmri_glm.fit(nii_path, design_matrices=design_matrix)
+
+        print('\t\t 5/5: From GLM model, create z-score contrast maps and save to output path')
+        # contrast names and associated contrasts in contrasts defined is looped over
+        # contrast name is used in saving file, the contrast is used in deriving z-score
+        for con_name, con in contrasts.items():
+            beta_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_{run}_contrast-{con_name}_mask-brain' \
+                        f'_mot-{motion}_mod-{model}_fwhm-{smooth}_beta.nii.gz'
+            beta_est = run_fmri_glm.compute_contrast(con, output_type='effect_size')
+            beta_est.to_filename(beta_name)
+
+            # Calc: variance
+            var_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_{run}_contrast-{con_name}_mask-brain' \
+                    f'_mot-{motion}_mod-{model}_fwhm-{smooth}_var.nii.gz'
+            var_est = run_fmri_glm.compute_contrast(con, output_type='effect_variance')
+            var_est.to_filename(var_name)
+
+            # Calc: residual variance
+            # since eff is inverse 1/2, reverse multiple 2/1 for residual var
+            var_data = var_est.get_fdata()
+            est_resvar = var_data * float(series_eff[con_name].values[0])
+            resvar_nii = nib.Nifti1Image(est_resvar, var_est.affine)
+            resvar_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_{run}_contrast-{con_name}_mask-brain' \
+                    f'_mot-{motion}_mod-{model}_fwhm-{smooth}_resvar.nii.gz'
+            nib.save(resvar_nii, resvar_name)

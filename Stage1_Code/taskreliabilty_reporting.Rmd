@@ -25,7 +25,7 @@ subtitle: <h2><u>Reliability, fMRI, tasks </u></h2>
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 if (!require("pacman")) install.packages("pacman")
 
-pacman::p_load(tidyverse, ggplot2, knitr, kableExtra, ggpubr, lme4, sjPlot, specr, ggrain, neuRosim, emmeans)
+pacman::p_load(tidyverse, ggplot2, knitr, kableExtra, ggpubr, lme4, sjPlot, specr, ggrain, neuRosim, emmeans, zoo)
 
 session_info = sessionInfo()
 system=session_info[[1]][1]
@@ -414,6 +414,56 @@ cowplot::plot_grid(plot_a_sub, plot_b_sub, ncol = 1, align = "v", axis = 'tblr',
                    label_fontfamily = "Times", label_size = 12)
 ```
 
+# Stability of the correlation
+
+create subsample data
+
+```{r}
+set.seed(911)
+# empty df
+data <- data.frame(size = numeric(), icc = numeric())
+
+# n range 5 to 1000, interval 5
+n_start <- 5
+n_end <- 1000
+interval <- 10
+
+# only a single iteration per sample size, additional iterations useful if wanting 95% ci
+
+for (n in seq(n_start, n_end, by = interval)) {
+  subsample <- df[sample(nrow(df), n, replace = TRUE), ]
+  
+  icc <- mean(subsample$med_icc)
+  data <- rbind(data, data.frame(size = n, icc = icc))
+}
+```
+
+```{r}
+ggplot(data, aes(x = size, y = icc)) +
+  geom_line() +
+  labs(x = "Sample Size (n)", y = "Mean ICC") +
+  ggtitle("Mean ICC by Sample Size") +
+  theme_minimal()
+```
+
+calculate first derivative values 
+```{r}
+# sliding window
+window_size = 10
+var_wind <- rollapply(data, window_size, function(x) var(x), align = "right", by.column = FALSE)
+thresh = .05
+# which point stable
+n_stable <- tail(which(var_wind < thresh), 1)
+
+# plot stability
+ggplot(data, aes(x = size, y = icc)) +
+  geom_line() +
+  labs(x = "Sample Size (n)", y = "Mean ICC") +
+  ggtitle("Mean ICC by Sample Size with point of stablity") +
+  geom_vline(xintercept = n_stable, linetype = "dashed", color = "red") +
+  theme_minimal()
+
+```
 
 ***
 ***
