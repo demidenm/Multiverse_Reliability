@@ -1,11 +1,14 @@
 import os
+import argparse
+import pandas as pd
 from glob import glob
-from pandas import DataFrame, read_csv
+from itertools import product
 from nilearn.glm.second_level import SecondLevelModel
 
+
 def group_onesample(fixedeffect_paths: list, session: str, task_type: str,
-                    contrast: str, group_outdir: str,
-                    model_permutation: str):
+                    contrast_type: str, group_outdir: str,
+                    model_permutation: str, mask: str = None):
     """
     This function takes in a list of fixed effect files for a select contrast and
     calculates a group (secondlevel) model by fitting an intercept to length of maps.
@@ -14,9 +17,10 @@ def group_onesample(fixedeffect_paths: list, session: str, task_type: str,
     :param fixedeffect_paths: a list of paths to the fixed effect models to be used
     :param session: string session label, BIDS label e.g., ses-1
     :param task_type: string task label, BIDS label e.g., mid
-    :param contrast: contrast type saved from fixed effect models
+    :param contrast_type: contrast type saved from fixed effect models
     :param model_permutation: complete string of model permutation, e.g., 'fwhm-4_mot-opt1_mod-AntMod'
     :param group_outdir: path to folder to save the group level models
+    :param mask: path to mask, default none
     :return: nothing return, files are saved
     """
 
@@ -27,59 +31,70 @@ def group_onesample(fixedeffect_paths: list, session: str, task_type: str,
     N_maps = len(fixedeffect_paths)
 
     # Create design matrix with intercept (1s) that's length of subjects/length of fixed_files
-    design_matrix = DataFrame([1] * N_maps,
-                              columns=['Intercept'])
+    design_matrix = pd.DataFrame([1] * N_maps,
+                                 columns=['Intercept'])
 
     # Fit secondlevel model
-    sec_lvl_model = SecondLevelModel(smoothing_fwhm=None)
+    sec_lvl_model = SecondLevelModel(mask_img=mask, smoothing_fwhm=None)
     sec_lvl_model = sec_lvl_model.fit(second_level_input=fixedeffect_paths,
                                       design_matrix=design_matrix)
 
     # Calculate z-statistic from second lvl map
-    zstat_map = sec_lvl_model.compute_contrast(
+    tstat_map = sec_lvl_model.compute_contrast(
         second_level_contrast='Intercept',
         second_level_stat_type='t',
-        output_type='z_score',
+        output_type='stat',
     )
 
     # group out file, naming subs-N
-    zstat_out = f'{group_outdir}/subs-{N_maps}_{session}_task-{task_type}_contrast-{contrast}_{model_permutation}' \
-                f'_stat-zstat.nii.gz'
-    zstat_map.to_filename(zstat_out)
+    tstat_out = f'{group_outdir}/subs-{N_maps}_{session}_task-{task_type}_contrast-{contrast_type}' \
+                f'_{model_permutation}_stat-tstat.nii.gz'
+    tstat_map.to_filename(tstat_out)
 
 
+parser = argparse.ArgumentParser(description="Script to run first level task models w/ nilearn")
 
-# Set paths
-local = '/Users/michaeldemidenko'
-proj_loc = f'{local}/Desktop/Academia/Stanford/2_F32/Multiverse_Reliability'
-data_dir = f'{local}/Downloads/test_modperm'
-fix_dir = f'{data_dir}/FixedEffects/'
-grp_out_dir = f'{data_dir}/Group_OneSample/'
+parser.add_argument("sub", help="subject name, sub-XX, include entirety with 'sub-' prefix")
+parser.add_argument("task", help="task type -- e.g., mid, reward, etc")
+parser.add_argument("ses", help="session, include the session type without prefix, e.g., 1, 01, baselinearm1")
+parser.add_argument("fmriprep_path", help="Path to the output directory for the fmriprep output")
+parser.add_argument("mask", help="path the to the binarized brain mask (e.g., MNI152 or "
+                                 "constrained mask in MNI space, or None")
+parser.add_argument("mask_label", help="label for mask, e.g. subtresh, suprathresh, yeo-network, or None")
+parser.add_argument("output", help="output folder where to write out and save information")
 
+args = parser.parse_args()
 
+# Now you can access the arguments as attributes of the 'args' object.
+subj = args.sub
+task = args.task
+ses = args.ses
+fix_dir = args.fmriprep_path
+brainmask = args.mask
+mask_label = args.mask_label
+scratch_out = args.output
 
-# subjects, contrast & permutation list
-subjects = read_csv(f'{proj_loc}/subjects.csv')['Subjects'].tolist()
-sess = 'ses-01'
-task = 'mid'
+# set permutations\
+fwhm_opt = [3, 4]#, 5]
+motion_opt = ["opt1", "opt2"] #, "opt3", "opt4", "opt5"]
+modtype_opt = ["CueMod", "AntMod"]#, "FixMod"]
+
+permutation_list = list(product(fwhm_opt, motion_opt, modtype_opt))
+
+# contrasts
 contrasts = [
-    'Lgain-Neut','Sgain-Neut',
-    'Lgain-Base','Sgain-Base'
+    'Lgain-Neut', 'Sgain-Neut',
+    'Lgain-Base', 'Sgain-Base'
 ]
-permutation_list = read_csv(f'{proj_loc}/model_permutations.csv',
-                            header=None, index_col=0).values.tolist()[1:]
-
-
-
-# Running group level act. [uncorrected] for list of contrasts
 
 for contrast in contrasts:
     print(f'\t Working on contrast map: {contrast}')
-    for fwhm, motion, model, mask_type in permutation_list:
-        model='mask-brain_mot-{}_mod-{}_fwhm-{}'.format(motion, model,fwhm)
+    for fwhm, motion, model in permutation_list:
+        model = 'mask-{}_mot-{}_mod-{}_fwhm-{}'.format(mask_label, motion, model, fwhm)
 
         # find all contrast fixed effect maps for model permutation across subjects
-        fix_maps = sorted(glob(f'{fix_dir}/*_{sess}_task-{task}_effect-fixed_'
-                            f'contrast-{contrast}_{model}_stat-effect.nii.gz'))
-        group_onesample(fixedeffect_paths=fix_maps, session=sess, task_type=task,
-                        contrast=contrast, group_outdir=grp_out_dir,model_permutation=model)
+        fix_maps = sorted(glob(f'{fix_dir}/**/*_{ses}_task-{task}_effect-fixed_'
+                               f'contrast-{contrast}_{model}_stat-effect.nii.gz'))
+        group_onesample(fixedeffect_paths=fix_maps, session=ses, task_type=task,
+                        contrast_type=contrast, group_outdir=scratch_out,
+                        model_permutation=model, mask=brainmask)

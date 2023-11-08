@@ -42,7 +42,10 @@ parser.add_argument("numvols", help="The number of volumes for BOLD file, e.g nu
 parser.add_argument("boldtr", help="the tr value for the datasets in seconds, e.g. .800, 2.0, 3.0")
 parser.add_argument("beh_path", help="Path to the behavioral (.tsv) directory/files for the task")
 parser.add_argument("fmriprep_path", help="Path to the output directory for the fmriprep output")
-parser.add_argument("mni152_brainmask", help="path the to the binarized MNI152 brain mask")
+parser.add_argument("mask", help="path the to a binarized brain mask (e.g., MNI152 or "
+                                 "constrained mask in MNI space, or None")
+parser.add_argument("mask_label", help="label for mask, e.g. subtresh, suprathresh, yeo-network, or None")
+
 parser.add_argument("output", help="output folder where to write out and save information")
 
 args = parser.parse_args()
@@ -56,7 +59,9 @@ numvols = args.numvols
 boldtr = args.boldtr
 beh_path = args.beh_path
 fmriprep_path = args.fmriprep_path
-mni152_brainmask = args.mni152_brainmask
+brainmask = args.mask
+mask_label = args.mask_label
+
 scratch_out = args.output
 
 # model design options, contrasts and weights setup
@@ -83,17 +88,20 @@ contrast_weights = {
 runs = ['01', '02']
 
 # Model permutations
-fwhm = [3, 4]#, 5]
-mot = ["opt1", "opt2"] #, "opt3", "opt4", "opt5"]
-mod_type = ["CueMod", "AntMod"]#, "FixMod"]
-permutation_list = list(product(fwhm, mot, mod_type))
+fwhm_opt = [3, 4]#, 5]
+motion_opt = ["opt1", "opt2"] #, "opt3", "opt4", "opt5"]
+modtype_opt = ["CueMod", "AntMod"]#, "FixMod"]
+
+permutation_list = list(product(fwhm_opt, motion_opt, modtype_opt))
 
 for run in runs:
     print(f'\tStarting {subj} {run}.')
     # set-up combined efficieny df
     comb_eff = pd.DataFrame(columns=[np.hstack(('model', list(contrast_weights.keys())))])
-    for smooth, motion, model in permutation_list:
-        print('\t\t Running model using: {}, {}, {}'.format(fwhm, motion, model))
+    count = 0
+    for fwhm, motion, model in permutation_list:
+        count = count + 1
+        print('\t\t {}. Running model using: {}, {}, {}'.format(count, fwhm, motion, model))
         print('\t\t 1/5 Load Files & set paths')
         # import behavior events .tsv from data path
         events_df = pd.read_csv(f'{beh_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_{run}_events.tsv',
@@ -143,8 +151,8 @@ for run in runs:
 
         print('\t\t 4/5 Mask Image, Fit GLM model ar1 autocorrelation')
         # using ar1 autocorrelation (FSL prewhitening), drift model
-        fmri_glm = FirstLevelModel(subject_label=subj, mask_img=mni152_brainmask,
-                                   t_r=boldtr, smoothing_fwhm=smooth,
+        fmri_glm = FirstLevelModel(subject_label=subj, mask_img=brainmask,
+                                   t_r=boldtr, smoothing_fwhm=fwhm,
                                    standardize=False, noise_model='ar1', drift_model=None, high_pass=None
                                    # cosine 0:3 included from fmriprep in design mat based on 128s calc
                                    )
@@ -156,14 +164,14 @@ for run in runs:
         # contrast names and associated contrasts in contrasts defined is looped over
         # contrast name is used in saving file, the contrast is used in deriving z-score
         for con_name, con in contrasts.items():
-            beta_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_{run}_contrast-{con_name}_mask-brain' \
-                        f'_mot-{motion}_mod-{model}_fwhm-{smooth}_beta.nii.gz'
+            model = 'contrast-{}_mask-{}_mot-{}_mod-{}_fwhm-{}'.format(con_name, mask_label, motion, model, fwhm)
+
+            beta_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_{run}_{model}_stat-beta.nii.gz'
             beta_est = run_fmri_glm.compute_contrast(con, output_type='effect_size')
             beta_est.to_filename(beta_name)
 
             # Calc: variance
-            var_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_{run}_contrast-{con_name}_mask-brain' \
-                    f'_mot-{motion}_mod-{model}_fwhm-{smooth}_var.nii.gz'
+            var_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_{run}_{model}_stat-var.nii.gz'
             var_est = run_fmri_glm.compute_contrast(con, output_type='effect_variance')
             var_est.to_filename(var_name)
 
@@ -172,6 +180,5 @@ for run in runs:
             var_data = var_est.get_fdata()
             est_resvar = var_data * float(series_eff[con_name].values[0])
             resvar_nii = nib.Nifti1Image(est_resvar, var_est.affine)
-            resvar_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_{run}_contrast-{con_name}_mask-brain' \
-                    f'_mot-{motion}_mod-{model}_fwhm-{smooth}_resvar.nii.gz'
+            resvar_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_{run}_{model}_stat-residvar.nii.gz'
             nib.save(resvar_nii, resvar_name)
