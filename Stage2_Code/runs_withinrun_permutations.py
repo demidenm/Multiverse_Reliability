@@ -104,14 +104,18 @@ for run in runs:
         print('\t\t {}. Running model using: {}, {}, {}'.format(count, fwhm, motion, model))
         print('\t\t 1/5 Load Files & set paths')
         # import behavior events .tsv from data path
-        events_df = pd.read_csv(f'{beh_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_{run}_events.tsv',
-                                sep='\t')
-        if sample == 'ahrb':
+
+        if sample == 'abcd':
+            events_df = pd.read_csv(f'{beh_path}/{subj}_ses-{ses}_task-{task}_{run}_events.tsv',
+                                    sep='\t')
             events_df = events_df.rename(columns=dict_renamecols_abcd)
         elif sample == 'mls':
+            events_df = pd.read_csv(f'{beh_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_{run}_events.tsv',
+                                    sep='\t')
             events_df = events_df.rename(columns=dict_renamecols_mls)
         else:
-            continue
+            events_df = pd.read_csv(f'{beh_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_{run}_events.tsv',
+                                    sep='\t')
 
         # get path to confounds from fmriprep, func data + mask
         conf_path = f'{fmriprep_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_desc-confounds_timeseries.tsv'
@@ -164,7 +168,7 @@ for run in runs:
         # contrast names and associated contrasts in contrasts defined is looped over
         # contrast name is used in saving file, the contrast is used in deriving z-score
         for con_name, con in contrasts.items():
-            model = 'contrast-{}_mask-{}_mot-{}_mod-{}_fwhm-{}'.format(con_name, mask_label, motion, model, fwhm)
+            model = f'contrast-{con_name}_mask-{mask_label}_mot-{motion}_mod-{model}_fwhm-{fwhm}'
 
             beta_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_{run}_{model}_stat-beta.nii.gz'
             beta_est = run_fmri_glm.compute_contrast(con, output_type='effect_size')

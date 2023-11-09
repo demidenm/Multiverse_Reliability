@@ -90,7 +90,7 @@ contrasts = [
 for contrast in contrasts:
     print(f'\t Working on contrast map: {contrast}')
     for fwhm, motion, model in permutation_list:
-        model = 'mask-{}_mot-{}_mod-{}_fwhm-{}'.format(mask_label, motion, model, fwhm)
+        model = f'mask-{mask_label}_mot-{motion}_mod-{model}_fwhm-{fwhm}'
 
         # find all contrast fixed effect maps for model permutation across subjects
         fix_maps = sorted(glob(f'{fix_dir}/**/*_{ses}_task-{task}_effect-fixed_'

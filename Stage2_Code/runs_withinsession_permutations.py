@@ -29,10 +29,10 @@ def fixed_effect(subject: str, session: str, task_type: str,
     :return: nothing return, files are saved
     """
     for contrast in contrast_list:
-        betas = sorted(glob(f'{firstlvl_indir}/{subject}_{session}_task-{task_type}_run-*_'
+        betas = sorted(glob(f'{firstlvl_indir}/**/{subject}_{session}_task-{task_type}_run-*_'
                             f'contrast-{contrast}_{model}_stat-beta.nii.gz'))
 
-        var = sorted(glob(f'{firstlvl_indir}/{subject}_{session}_task-{task_type}_run-*_'
+        var = sorted(glob(f'{firstlvl_indir}/**/{subject}_{session}_task-{task_type}_run-*_'
                           f'contrast-{contrast}_{model}_stat-var.nii.gz'))
 
         # conpute_fixed_effects options
@@ -103,7 +103,7 @@ for fwhm, motion, model in model_permutations:
     count = count + 1
     print('\t\t {}. Running model using: {}, {}, {}'.format(count, fwhm, motion, model))
 
-    model = 'mask-{}_mot-{}_mod-{}_fwhm-{}'.format(mask_label, motion, model, fwhm)
+    model = f'mask-{mask_label}_mot-{motion}_mod-{model}_fwhm-{fwhm}'
     fixed_effect(subject=subj, session=ses, task_type=task,
                  contrast_list=contrasts, firstlvl_indir=firstlvl_inp, fixedeffect_outdir=scratch_out,
                  model_permutation=model, save_beta=True, save_var=True, save_tstat=False)
