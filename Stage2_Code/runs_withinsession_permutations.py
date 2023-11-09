@@ -63,15 +63,15 @@ def fixed_effect(subject: str, session: str, task_type: str,
 
 parser = argparse.ArgumentParser(description="Script to run first level task models w/ nilearn")
 
-parser.add_argument("sample", help="sample type, ahrb, abcd or mls?")
-parser.add_argument("sub", help="subject name, sub-XX, include entirety with 'sub-' prefix")
-parser.add_argument("task", help="task type -- e.g., mid, reward, etc")
-parser.add_argument("ses", help="session, include the session type without prefix, e.g., 1, 01, baselinearm1")
-parser.add_argument("firstlvl_inp", help="Path to first level directory")
-parser.add_argument("mask", help="path the to a binarized brain mask (e.g., MNI152 or "
+parser.add_argument("--sample", help="sample type, ahrb, abcd or mls?")
+parser.add_argument("--sub", help="subject name, sub-XX, include entirety with 'sub-' prefix")
+parser.add_argument("--task", help="task type -- e.g., mid, reward, etc")
+parser.add_argument("--ses", help="session, include the session type without prefix, e.g., 1, 01, baselinearm1")
+parser.add_argument("--firstlvl_inp", help="Path to first level directory")
+parser.add_argument("--mask", help="path the to a binarized brain mask (e.g., MNI152 or "
                                  "constrained mask in MNI space, or None")
-parser.add_argument("mask_label", help="label for mask, e.g. subtresh, suprathresh, yeo-network, or None")
-parser.add_argument("output", help="output folder where to write out and save information")
+parser.add_argument("--mask_label", help="label for mask, e.g. subtresh, suprathresh, yeo-network, or None")
+parser.add_argument("--output", help="output folder where to write out and save information")
 
 args = parser.parse_args()
 

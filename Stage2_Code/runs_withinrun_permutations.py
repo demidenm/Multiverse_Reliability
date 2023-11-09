@@ -1,13 +1,18 @@
+import sys
+import os
 import argparse
 import numpy as np
 import pandas as pd
 import nibabel as nib
 from glob import glob
-from Stage2_Code.designmat_regressors_define import (
-    create_design_mid, pull_regressors, eff_estimator)
 from nilearn.glm.first_level import FirstLevelModel
 from itertools import product
 
+
+# Getpath to Stage2 scripts
+project_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(project_dir)
+from Stage2_Code.designmat_regressors_define import create_design_mid, pull_regressors, eff_estimator
 
 # relabel column names to match templates code for ABCD/MLS
 dict_renamecols_abcd = {
@@ -34,19 +39,18 @@ dict_renamecols_mls = {
 
 parser = argparse.ArgumentParser(description="Script to run first level task models w/ nilearn")
 
-parser.add_argument("sample", help="sample type, ahrb, abcd or mls?")
-parser.add_argument("sub", help="subject name, sub-XX, include entirety with 'sub-' prefix")
-parser.add_argument("task", help="task type -- e.g., mid, reward, etc")
-parser.add_argument("ses", help="session, include the session type without prefix, e.g., 1, 01, baselinearm1")
-parser.add_argument("numvols", help="The number of volumes for BOLD file, e.g numeric")
-parser.add_argument("boldtr", help="the tr value for the datasets in seconds, e.g. .800, 2.0, 3.0")
-parser.add_argument("beh_path", help="Path to the behavioral (.tsv) directory/files for the task")
-parser.add_argument("fmriprep_path", help="Path to the output directory for the fmriprep output")
-parser.add_argument("mask", help="path the to a binarized brain mask (e.g., MNI152 or "
+parser.add_argument("--sample", help="sample type, ahrb, abcd or mls?")
+parser.add_argument("--sub", help="subject name, sub-XX, include entirety with 'sub-' prefix")
+parser.add_argument("--task", help="task type -- e.g., mid, reward, etc")
+parser.add_argument("--ses", help="session, include the session type without prefix, e.g., 1, 01, baselinearm1")
+parser.add_argument("--numvols", help="The number of volumes for BOLD file, e.g numeric")
+parser.add_argument("--boldtr", help="the tr value for the datasets in seconds, e.g. .800, 2.0, 3.0")
+parser.add_argument("--beh_path", help="Path to the behavioral (.tsv) directory/files for the task")
+parser.add_argument("--fmriprep_path", help="Path to the output directory for the fmriprep output")
+parser.add_argument("--mask", help="path the to a binarized brain mask (e.g., MNI152 or "
                                  "constrained mask in MNI space, or None")
-parser.add_argument("mask_label", help="label for mask, e.g. subtresh, suprathresh, yeo-network, or None")
-
-parser.add_argument("output", help="output folder where to write out and save information")
+parser.add_argument("--mask_label", help="label for mask, e.g. subtresh, suprathresh, yeo-network, or None")
+parser.add_argument("--output", help="output folder where to write out and save information")
 
 args = parser.parse_args()
 
@@ -55,8 +59,8 @@ sample = args.sample
 subj = args.sub
 task = args.task
 ses = args.ses
-numvols = args.numvols
-boldtr = args.boldtr
+numvols = int(args.numvols)
+boldtr = float(args.boldtr)
 beh_path = args.beh_path
 fmriprep_path = args.fmriprep_path
 brainmask = args.mask
@@ -104,23 +108,21 @@ for run in runs:
         print('\t\t {}. Running model using: {}, {}, {}'.format(count, fwhm, motion, model))
         print('\t\t 1/5 Load Files & set paths')
         # import behavior events .tsv from data path
+        events_df = pd.read_csv(f'{beh_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_run-{run}_events.tsv', sep='\t')
 
         if sample == 'abcd':
-            events_df = pd.read_csv(f'{beh_path}/{subj}_ses-{ses}_task-{task}_{run}_events.tsv',
-                                    sep='\t')
             events_df = events_df.rename(columns=dict_renamecols_abcd)
+
         elif sample == 'mls':
-            events_df = pd.read_csv(f'{beh_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_{run}_events.tsv',
-                                    sep='\t')
             events_df = events_df.rename(columns=dict_renamecols_mls)
+
         else:
-            events_df = pd.read_csv(f'{beh_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_{run}_events.tsv',
-                                    sep='\t')
+            continue
 
         # get path to confounds from fmriprep, func data + mask
-        conf_path = f'{fmriprep_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_desc-confounds_timeseries.tsv'
+        conf_path = f'{fmriprep_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_run-{run}_desc-confounds_timeseries.tsv'
         nii_path = glob(
-            f'{fmriprep_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}'
+            f'{fmriprep_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_run-{run}'
             f'_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz')[0]
 
         print('\t\t 2/5 Create Regressors & Design Matrix for GLM')
@@ -150,7 +152,7 @@ for run in runs:
         )
 
         comb_eff = pd.concat([comb_eff, series_eff])
-        eff_out_path = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_{run}_efficiency.tsv'
+        eff_out_path = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_run-{run}_efficiency.tsv'
         comb_eff.to_csv(eff_out_path, index=False)
 
         print('\t\t 4/5 Mask Image, Fit GLM model ar1 autocorrelation')
@@ -170,12 +172,12 @@ for run in runs:
         for con_name, con in contrasts.items():
             model = f'contrast-{con_name}_mask-{mask_label}_mot-{motion}_mod-{model}_fwhm-{fwhm}'
 
-            beta_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_{run}_{model}_stat-beta.nii.gz'
+            beta_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_run-{run}_{model}_stat-beta.nii.gz'
             beta_est = run_fmri_glm.compute_contrast(con, output_type='effect_size')
             beta_est.to_filename(beta_name)
 
             # Calc: variance
-            var_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_{run}_{model}_stat-var.nii.gz'
+            var_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_run-{run}_{model}_stat-var.nii.gz'
             var_est = run_fmri_glm.compute_contrast(con, output_type='effect_variance')
             var_est.to_filename(var_name)
 
@@ -184,5 +186,5 @@ for run in runs:
             var_data = var_est.get_fdata()
             est_resvar = var_data * float(series_eff[con_name].values[0])
             resvar_nii = nib.Nifti1Image(est_resvar, var_est.affine)
-            resvar_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_{run}_{model}_stat-residvar.nii.gz'
+            resvar_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_run-{run}_{model}_stat-residvar.nii.gz'
             nib.save(resvar_nii, resvar_name)
