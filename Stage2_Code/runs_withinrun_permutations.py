@@ -37,6 +37,14 @@ dict_renamecols_mls = {
     'Result': 'TRIAL_RESULT'
 }
 
+dict_rename_cuetype = {
+        'LgReward': 'LargeGain',
+        'LgPun': 'LargeLoss',
+        'Triangle': 'NoMoneyStake',
+        'SmallReward': 'SmallGain',
+        'SmallPun': 'SmallLoss'
+}
+
 parser = argparse.ArgumentParser(description="Script to run first level task models w/ nilearn")
 
 parser.add_argument("--sample", help="sample type, ahrb, abcd or mls?")
@@ -113,10 +121,10 @@ for run in runs:
 
         if sample == 'abcd':
             events_df = events_df.rename(columns=dict_renamecols_abcd)
-
+            events_df['TRIAL_TYPE'] = events_df['TRIAL_TYPE'].replace(dict_rename_cuetype)
         elif sample == 'mls':
             events_df = events_df.rename(columns=dict_renamecols_mls)
-
+            events_df['TRIAL_TYPE'] = events_df['TRIAL_TYPE'].replace(dict_rename_cuetype)
         else:
             continue
 
