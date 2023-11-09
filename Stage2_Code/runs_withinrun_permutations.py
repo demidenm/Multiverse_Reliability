@@ -140,11 +140,11 @@ for run in runs:
         print('\t\t 3/5 Estimate design efficiency')
         # efficiency estimates
         con_matrix = pd.DataFrame(columns=design_matrix.columns)
-        print(f'\t\t\t size of design matrix: {design_matrix.shape} & contrast matrix: {con_matrix.shape}')
         for contrast_name, contrast_dict in contrast_weights.items():
             con_matrix = con_matrix.append(pd.Series(contrast_dict, name=contrast_name))
 
         con_matrix = con_matrix.fillna(0)
+        print(f'\t\t\t size of design matrix: {design_matrix.shape} & contrast matrix: {con_matrix.shape}')
 
         series_eff = pd.DataFrame(
             np.hstack((model, run, eff_estimator(np.array(design_matrix), np.array(con_matrix)))
