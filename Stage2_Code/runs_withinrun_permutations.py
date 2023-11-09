@@ -86,7 +86,7 @@ contrast_weights = {
     'Lgain-Neut': {'LargeGain': 1, 'NoMoneyStake': -1},
     'Sgain-Neut': {'SmallGain': 1, 'NoMoneyStake': -1},
     'Lgain-Base': {'LargeGain': 1},
-    'Sgain-Base': {'SmallGain': 1},
+    'Sgain-Base': {'SmallGain': 1}
 }
 
 runs = ['01', '02']
@@ -101,9 +101,10 @@ permutation_list = list(product(fwhm_opt, motion_opt, modtype_opt))
 for run in runs:
     print(f'\tStarting {subj} {run}.')
     # set-up combined efficieny df
-    comb_eff = pd.DataFrame(columns=[np.hstack(('model', list(contrast_weights.keys())))])
+    comb_eff = pd.DataFrame(columns=[np.hstack(('model', 'run', list(contrast_weights.keys())))])
     count = 0
     for fwhm, motion, model in permutation_list:
+
         count = count + 1
         print('\t\t {}. Running model using: {}, {}, {}'.format(count, fwhm, motion, model))
         print('\t\t 1/5 Load Files & set paths')
@@ -139,16 +140,16 @@ for run in runs:
         print('\t\t 3/5 Estimate design efficiency')
         # efficiency estimates
         con_matrix = pd.DataFrame(columns=design_matrix.columns)
-
+        print(f'\t\t\t size of design matrix: {design_matrix.shape} & contrast matrix: {con_matrix.shape}')
         for contrast_name, contrast_dict in contrast_weights.items():
             con_matrix = con_matrix.append(pd.Series(contrast_dict, name=contrast_name))
 
         con_matrix = con_matrix.fillna(0)
 
         series_eff = pd.DataFrame(
-            np.hstack((model,
-                       eff_estimator(np.array(design_matrix), np.array(con_matrix)))).reshape(1, -1),
-            columns=[np.hstack(('model', list(contrast_weights.keys())))]
+            np.hstack((model, run, eff_estimator(np.array(design_matrix), np.array(con_matrix)))
+                      ).reshape(1, -1),
+            columns=[np.hstack(('model', 'run', list(contrast_weights.keys())))]
         )
 
         comb_eff = pd.concat([comb_eff, series_eff])
