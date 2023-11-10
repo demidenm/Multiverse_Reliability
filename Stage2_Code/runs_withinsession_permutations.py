@@ -2,6 +2,8 @@ import os
 import argparse
 from glob import glob
 from itertools import product
+import warnings
+warnings.filterwarnings("ignore")
 from nilearn.glm import compute_fixed_effects
 
 
@@ -30,10 +32,10 @@ def fixed_effect(subject: str, session: str, task_type: str,
     """
     for contrast in contrast_list:
         betas = sorted(glob(f'{firstlvl_indir}/**/{subject}_{session}_task-{task_type}_run-*_'
-                            f'contrast-{contrast}_{model}_stat-beta.nii.gz'))
+                            f'contrast-{contrast}_{model_permutation}_stat-beta.nii.gz'))
 
         var = sorted(glob(f'{firstlvl_indir}/**/{subject}_{session}_task-{task_type}_run-*_'
-                          f'contrast-{contrast}_{model}_stat-var.nii.gz'))
+                          f'contrast-{contrast}_{model_permutation}_stat-var.nii.gz'))
 
         # conpute_fixed_effects options
         # (1) contrast map of the effect across runs;
@@ -48,16 +50,16 @@ def fixed_effect(subject: str, session: str, task_type: str,
 
         if save_beta:
             fix_effect_out = f'{fixedeffect_outdir}/{subject}_ses-{session}_task-{task_type}_' \
-                             f'effect-fixed_contrast-{contrast}_{model_permutation}_stat-effect.nii.gz'
+                             f'contrast-{contrast}_{model_permutation}_stat-effect.nii.gz'
             fix_effect.to_filename(fix_effect_out)
 
         if save_var:
             fix_var_out = f'{fixedeffect_outdir}/{subject}_ses-{session}_task-{task_type}_' \
-                          f'effect-fixed_contrast-{contrast}_{model_permutation}_stat-var.nii.gz'
+                          f'contrast-{contrast}_{model_permutation}_stat-var.nii.gz'
             fix_var.to_filename(fix_var_out)
         if save_tstat:
             fix_tstat_out = f'{fixedeffect_outdir}/{subject}_ses-{session}_task-{task_type}_' \
-                            f'effect-fixed_contrast-{contrast}_{model_permutation}_stat-tstat.nii.gz'
+                            f'contrast-{contrast}_{model_permutation}_stat-tstat.nii.gz'
             fix_tstat.to_filename(fix_tstat_out)
 
 
@@ -103,7 +105,7 @@ for fwhm, motion, model in model_permutations:
     count = count + 1
     print('\t\t {}. Running model using: {}, {}, {}'.format(count, fwhm, motion, model))
 
-    model = f'mask-{mask_label}_mot-{motion}_mod-{model}_fwhm-{fwhm}'
+    mod_name = f'mask-{mask_label}_mot-{motion}_mod-{model}_fwhm-{fwhm}'
     fixed_effect(subject=subj, session=ses, task_type=task,
                  contrast_list=contrasts, firstlvl_indir=firstlvl_inp, fixedeffect_outdir=scratch_out,
-                 model_permutation=model, save_beta=True, save_var=True, save_tstat=False)
+                 model_permutation=mod_name, save_beta=True, save_var=True, save_tstat=False)

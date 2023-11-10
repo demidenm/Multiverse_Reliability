@@ -5,9 +5,10 @@ import numpy as np
 import pandas as pd
 import nibabel as nib
 from glob import glob
-from nilearn.glm.first_level import FirstLevelModel
 from itertools import product
-
+import warnings
+warnings.filterwarnings("ignore")
+from nilearn.glm.first_level import FirstLevelModel
 
 # Getpath to Stage2 scripts
 project_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))

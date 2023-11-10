@@ -4,6 +4,8 @@ import pandas as pd
 from glob import glob
 from itertools import product
 from nilearn.glm.second_level import SecondLevelModel
+import warnings
+warnings.filterwarnings("ignore")
 
 
 def group_onesample(fixedeffect_paths: list, session: str, task_type: str,
