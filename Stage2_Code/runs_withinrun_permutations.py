@@ -58,8 +58,8 @@ parser.add_argument("--boldtr", help="the tr value for the datasets in seconds, 
 parser.add_argument("--beh_path", help="Path to the behavioral (.tsv) directory/files for the task")
 parser.add_argument("--fmriprep_path", help="Path to the output directory for the fmriprep output")
 parser.add_argument("--mask", help="path the to a binarized brain mask (e.g., MNI152 or "
-                                   "constrained mask in MNI space, or None")
-parser.add_argument("--mask_label", help="label for mask, e.g. subtresh, suprathresh, yeo-network, or None")
+                                   "constrained mask in MNI space, spec-network, or None")
+parser.add_argument("--mask_label", help="label for mask, e.g. mni152, subtresh, suprathresh, yeo-network, or None")
 parser.add_argument("--output", help="output folder where to write out and save information")
 
 args = parser.parse_args()

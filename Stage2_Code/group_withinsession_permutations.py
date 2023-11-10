@@ -76,7 +76,7 @@ brainmask = args.mask
 mask_label = args.mask_label
 scratch_out = args.output
 
-# set permutations\
+# Model permutations
 fwhm_opt = [3, 4]#, 5]
 motion_opt = ["opt1", "opt2"] #, "opt3", "opt4", "opt5"]
 modtype_opt = ["CueMod", "AntMod"]#, "FixMod"]

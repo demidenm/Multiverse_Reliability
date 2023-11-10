@@ -31,10 +31,10 @@ def fixed_effect(subject: str, session: str, task_type: str,
     :return: nothing return, files are saved
     """
     for contrast in contrast_list:
-        betas = sorted(glob(f'{firstlvl_indir}/**/{subject}_{session}_task-{task_type}_run-*_'
+        betas = sorted(glob(f'{firstlvl_indir}/{subject}_ses-{session}_task-{task_type}_run-*_'
                             f'contrast-{contrast}_{model_permutation}_stat-beta.nii.gz'))
 
-        var = sorted(glob(f'{firstlvl_indir}/**/{subject}_{session}_task-{task_type}_run-*_'
+        var = sorted(glob(f'{firstlvl_indir}/{subject}_ses-{session}_task-{task_type}_run-*_'
                           f'contrast-{contrast}_{model_permutation}_stat-var.nii.gz'))
 
         # conpute_fixed_effects options
@@ -72,7 +72,7 @@ parser.add_argument("--ses", help="session, include the session type without pre
 parser.add_argument("--firstlvl_inp", help="Path to first level directory")
 parser.add_argument("--mask", help="path the to a binarized brain mask (e.g., MNI152 or "
                                  "constrained mask in MNI space, or None")
-parser.add_argument("--mask_label", help="label for mask, e.g. subtresh, suprathresh, yeo-network, or None")
+parser.add_argument("--mask_label", help="label for mask, e.g. mni152, subtresh, suprathresh, yeo-network, or None")
 parser.add_argument("--output", help="output folder where to write out and save information")
 
 args = parser.parse_args()
@@ -93,12 +93,12 @@ contrasts = [
     'Lgain-Base', 'Sgain-Base'
 ]
 
-fwhm_opt = [4,  5]
-mot_opt = ["opt1", "opt5"]
-modtype_opt = ["AntMod", "FixMod"]
+# Model permutations
+fwhm_opt = [3, 4]#, 5]
+motion_opt = ["opt1", "opt2"] #, "opt3", "opt4", "opt5"]
+modtype_opt = ["CueMod", "AntMod"]#, "FixMod"]
 
-# note, didn't save in FirstLvl due to need smoothing to occur outside of list
-model_permutations = list(product(fwhm_opt, mot_opt, modtype_opt))
+permutation_list = list(product(fwhm_opt, motion_opt, modtype_opt))
 
 count = 0
 for fwhm, motion, model in model_permutations:
