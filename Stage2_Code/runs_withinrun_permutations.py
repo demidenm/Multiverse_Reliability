@@ -140,10 +140,10 @@ for run in runs:
 
         # run to create design matrix
         design_matrix = create_design_mid(events_df=events_df, bold_tr=boldtr, num_volumes=numvols,
-                                          onset_label=model_types[model][0],
-                                          duration_label=model_types[model][1],
-                                          conf_regressors=conf_regressors,
-                                          hrf_model='spm', stc=False)
+                                      onset_label=model_types[model][0],
+                                      duration_label=model_types[model][1],
+                                      conf_regressors=conf_regressors,
+                                      hrf_model='spm', stc=False)
 
         print('\t\t 3/5 Estimate design efficiency')
         # efficiency estimates
@@ -179,14 +179,14 @@ for run in runs:
         # contrast names and associated contrasts in contrasts defined is looped over
         # contrast name is used in saving file, the contrast is used in deriving z-score
         for con_name, con in contrasts.items():
-            model = f'contrast-{con_name}_mask-{mask_label}_mot-{motion}_mod-{model}_fwhm-{fwhm}'
+            mod_name = f'contrast-{con_name}_mask-{mask_label}_mot-{motion}_mod-{model}_fwhm-{fwhm}'
 
-            beta_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_run-{run}_{model}_stat-beta.nii.gz'
+            beta_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_run-{run}_{mod_name}_stat-beta.nii.gz'
             beta_est = run_fmri_glm.compute_contrast(con, output_type='effect_size')
             beta_est.to_filename(beta_name)
 
             # Calc: variance
-            var_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_run-{run}_{model}_stat-var.nii.gz'
+            var_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_run-{run}_{mod_name}_stat-var.nii.gz'
             var_est = run_fmri_glm.compute_contrast(con, output_type='effect_variance')
             var_est.to_filename(var_name)
 
@@ -195,5 +195,5 @@ for run in runs:
             var_data = var_est.get_fdata()
             est_resvar = var_data * float(series_eff[con_name].values[0])
             resvar_nii = nib.Nifti1Image(est_resvar, var_est.affine)
-            resvar_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_run-{run}_{model}_stat-residvar.nii.gz'
+            resvar_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_run-{run}_{mod_name}_stat-residvar.nii.gz'
             nib.save(resvar_nii, resvar_name)
