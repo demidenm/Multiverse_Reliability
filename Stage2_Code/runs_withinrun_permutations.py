@@ -103,9 +103,18 @@ contrast_weights = {
 runs = ['01', '02']
 
 # Model permutations
-fwhm_opt = [3, 4]#, 5]
-motion_opt = ["opt1", "opt2"] #, "opt3", "opt4", "opt5"]
-modtype_opt = ["CueMod", "AntMod"]#, "FixMod"]
+if sample in ['abcd', 'ahrb']:
+    voxel = 2.4
+    opts = np.array([1.5,  2, 2.5, 3, 3.5])
+    fwhm_opt = list(np.round(voxel * opts, 2))
+elif sample in 'mls':
+    voxel = 2.4
+    inh_smooth_weight = .75
+    opts = np.array([1.5, 2, 2.5, 3, 3.5])*inh_smooth_weight
+    fwhm_opt = list(np.round(voxel * opts, 2))
+
+motion_opt = ["opt1", "opt2", "opt3", "opt4", "opt5"]
+modtype_opt = ["CueMod", "AntMod", "FixMod"]
 
 permutation_list = list(product(fwhm_opt, motion_opt, modtype_opt))
 

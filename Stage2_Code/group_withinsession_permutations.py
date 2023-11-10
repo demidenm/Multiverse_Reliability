@@ -1,6 +1,7 @@
 import os
 import argparse
 import pandas as pd
+import numpy as np
 from glob import glob
 from itertools import product
 from nilearn.glm.second_level import SecondLevelModel
@@ -56,6 +57,7 @@ def group_onesample(fixedeffect_paths: list, session: str, task_type: str,
 
 parser = argparse.ArgumentParser(description="Script to run first level task models w/ nilearn")
 
+parser.add_argument("--sample", help="sample type, ahrb, abcd or mls?")
 parser.add_argument("--sub", help="subject name, sub-XX, include entirety with 'sub-' prefix")
 parser.add_argument("--task", help="task type -- e.g., mid, reward, etc")
 parser.add_argument("--ses", help="session, include the session type without prefix, e.g., 1, 01, baselinearm1")
@@ -68,6 +70,7 @@ parser.add_argument("--output", help="output folder where to write out and save 
 args = parser.parse_args()
 
 # Now you can access the arguments as attributes of the 'args' object.
+sample = args.sample
 subj = args.sub
 task = args.task
 ses = args.ses
@@ -77,9 +80,18 @@ mask_label = args.mask_label
 scratch_out = args.output
 
 # Model permutations
-fwhm_opt = [3, 4]#, 5]
-motion_opt = ["opt1", "opt2"] #, "opt3", "opt4", "opt5"]
-modtype_opt = ["CueMod", "AntMod"]#, "FixMod"]
+if sample in ['abcd', 'ahrb']:
+    voxel = 2.4
+    opts = np.array([1.5,  2, 2.5, 3, 3.5])
+    fwhm_opt = list(np.round(voxel * opts, 2))
+elif sample in 'mls':
+    voxel = 2.4
+    inh_smooth_weight = .75
+    opts = np.array([1.5, 2, 2.5, 3, 3.5])*inh_smooth_weight
+    fwhm_opt = list(np.round(voxel * opts, 2))
+
+motion_opt = ["opt1", "opt2", "opt3", "opt4", "opt5"]
+modtype_opt = ["CueMod", "AntMod", "FixMod"]
 
 permutation_list = list(product(fwhm_opt, motion_opt, modtype_opt))
 
