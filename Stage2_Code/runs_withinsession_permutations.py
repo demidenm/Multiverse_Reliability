@@ -101,7 +101,7 @@ modtype_opt = ["CueMod", "AntMod"]#, "FixMod"]
 permutation_list = list(product(fwhm_opt, motion_opt, modtype_opt))
 
 count = 0
-for fwhm, motion, model in model_permutations:
+for fwhm, motion, model in permutation_list:
     count = count + 1
     print('\t\t {}. Running model using: {}, {}, {}'.format(count, fwhm, motion, model))
 
