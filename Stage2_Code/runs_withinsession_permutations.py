@@ -1,10 +1,10 @@
 import os
 import argparse
+import warnings
 from glob import glob
 from itertools import product
-import warnings
-warnings.filterwarnings("ignore")
 from nilearn.glm import compute_fixed_effects
+warnings.filterwarnings("ignore")
 
 
 def fixed_effect(subject: str, session: str, task_type: str,

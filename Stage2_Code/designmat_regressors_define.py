@@ -1,8 +1,8 @@
+import os
 import pandas as pd
 import numpy as np
 from nilearn.glm.first_level import make_first_level_design_matrix
 from glob import glob
-import os
 
 
 def eff_estimator(desmat, contrast_matrix):
@@ -86,7 +86,7 @@ def pull_regressors(confound_path: str, regressor_type: str = 'opt1') -> pd.Data
     return pd.DataFrame(confound_df[confound_dict[regressor_type]])
 
 
-def create_design_mid(events_df: pd.DataFrame, bold_tr: int, num_volumes: int,
+def create_design_mid(events_df: pd.DataFrame, bold_tr: float, num_volumes: int,
                       onset_label: str, duration_label: str,
                       conf_regressors: pd.DataFrame, hrf_model: str = 'glover',
                       stc: bool = False) -> pd.DataFrame:

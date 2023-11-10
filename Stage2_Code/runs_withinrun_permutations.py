@@ -1,14 +1,14 @@
 import sys
 import os
 import argparse
+import warnings
 import numpy as np
 import pandas as pd
 import nibabel as nib
 from glob import glob
 from itertools import product
-import warnings
-warnings.filterwarnings("ignore")
 from nilearn.glm.first_level import FirstLevelModel
+warnings.filterwarnings("ignore")
 
 # Getpath to Stage2 scripts
 project_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -52,12 +52,13 @@ parser.add_argument("--sample", help="sample type, ahrb, abcd or mls?")
 parser.add_argument("--sub", help="subject name, sub-XX, include entirety with 'sub-' prefix")
 parser.add_argument("--task", help="task type -- e.g., mid, reward, etc")
 parser.add_argument("--ses", help="session, include the session type without prefix, e.g., 1, 01, baselinearm1")
+parser.add_argument("--stc", help="slice time correction performed or not during preprocessing? False (no), True (yes)")
 parser.add_argument("--numvols", help="The number of volumes for BOLD file, e.g numeric")
 parser.add_argument("--boldtr", help="the tr value for the datasets in seconds, e.g. .800, 2.0, 3.0")
 parser.add_argument("--beh_path", help="Path to the behavioral (.tsv) directory/files for the task")
 parser.add_argument("--fmriprep_path", help="Path to the output directory for the fmriprep output")
 parser.add_argument("--mask", help="path the to a binarized brain mask (e.g., MNI152 or "
-                                 "constrained mask in MNI space, or None")
+                                   "constrained mask in MNI space, or None")
 parser.add_argument("--mask_label", help="label for mask, e.g. subtresh, suprathresh, yeo-network, or None")
 parser.add_argument("--output", help="output folder where to write out and save information")
 
@@ -67,6 +68,7 @@ args = parser.parse_args()
 sample = args.sample
 subj = args.sub
 task = args.task
+stc = args.stc
 ses = args.ses
 numvols = int(args.numvols)
 boldtr = float(args.boldtr)
@@ -118,7 +120,8 @@ for run in runs:
         print('\t\t {}. Running model using: {}, {}, {}'.format(count, fwhm, motion, model))
         print('\t\t 1/5 Load Files & set paths')
         # import behavior events .tsv from data path
-        events_df = pd.read_csv(f'{beh_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_run-{run}_events.tsv', sep='\t')
+        events_df = pd.read_csv(f'{beh_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_run-{run}_events.tsv',
+                                sep='\t')
 
         if sample == 'abcd':
             events_df = events_df.rename(columns=dict_renamecols_abcd)
@@ -130,7 +133,8 @@ for run in runs:
             continue
 
         # get path to confounds from fmriprep, func data + mask
-        conf_path = f'{fmriprep_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_run-{run}_desc-confounds_timeseries.tsv'
+        conf_path = f'{fmriprep_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_run-{run}' \
+                    f'_desc-confounds_timeseries.tsv'
         nii_path = glob(
             f'{fmriprep_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_run-{run}'
             f'_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz')[0]
@@ -141,10 +145,10 @@ for run in runs:
 
         # run to create design matrix
         design_matrix = create_design_mid(events_df=events_df, bold_tr=boldtr, num_volumes=numvols,
-                                      onset_label=model_types[model][0],
-                                      duration_label=model_types[model][1],
-                                      conf_regressors=conf_regressors,
-                                      hrf_model='spm', stc=False)
+                                          onset_label=model_types[model][0],
+                                          duration_label=model_types[model][1],
+                                          conf_regressors=conf_regressors,
+                                          hrf_model='spm', stc=stc)
 
         print('\t\t 3/5 Estimate design efficiency')
         # efficiency estimates
