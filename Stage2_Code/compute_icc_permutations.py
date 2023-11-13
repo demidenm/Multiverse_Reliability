@@ -37,7 +37,8 @@ if not os.path.exists(mask):
     # Load the Wilson image
     wilson_img = datasets.fetch_neurovault_ids(image_ids=[68843])
     wilson = image.load_img(wilson_img.images[0])
-    wilson_resample = image.resample_to_img(source_img=wilson, target_img=mask,
+    wilson_resample = image.resample_to_img(source_img=wilson,
+                                            target_img=f'{mask_dir}/MNI152NLin2009cAsym_res-02_desc-brain_mask.nii.gz',
                                             interpolation='continuous')
 
     # binarize masked image
