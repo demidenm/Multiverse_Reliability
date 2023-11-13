@@ -9,7 +9,7 @@ from nilearn import image, datasets
 warnings.filterwarnings("ignore")
 
 parser = argparse.ArgumentParser(description="Script to run first level task models w/ nilearn")
-
+parser.add_argument("--sample", help="sample type, ahrb, abcd or mls?")
 parser.add_argument("--ses", help="session, include the session type without prefix, e.g., 1, 01, baselinearm1")
 parser.add_argument("--type", help="between runs or sessions, e.g., run, session")
 parser.add_argument("--model", help="model permutation, e.g. contrast-Sgain-Neut_mask-mni152_mot-opt5_mod-FixMod_fwhm-6.0")
