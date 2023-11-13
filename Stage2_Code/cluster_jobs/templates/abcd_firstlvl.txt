@@ -8,14 +8,14 @@ sub=sub-SUBJECT
 fmriprep=fmriprep_v23_1_4
 task=MID
 s3_bucket=s3://ABCD_BIDS/derivatives/${fmriprep}
-beh_dat=$curr/../../../../../../slurm_ABCD_s3/Beh_Data
+beh_dat=${curr_dir}/../../../../../slurm_ABCD_s3/Beh_Data
 tmp_in=/tmp/processed
-mask_path=$curr/../../brain_mask/MNI152NLin2009cAsym_res-02_desc-brain_mask.nii.gz
-file_out=/scratch.global/${USER}/analyses/reliability
+mask_path=${curr_dir}/../brain_mask/MNI152NLin2009cAsym_res-02_desc-brain_mask.nii.gz
+file_out=/scratch.global/${USER}/analyses_reliability
 vol_info_file=${file_out}/vol_info.tsv
-firstlvl_fold=/scratch.global/${USER}/analyses/reliability/firstlvl/${sub}
-fixeff_fold=/scratch.global/${USER}/analyses/reliability/fixedeff/${sub}
-script_dir=$curr/../..
+firstlvl_fold=/scratch.global/${USER}/analyses_reliability/firstlvl/${ses}/${sub}
+fixeff_fold=/scratch.global/${USER}/analyses_reliability/fixedeff/${ses}/${sub}
+script_dir=${curr_dir}/..
 
 # copy data from beh ouput & s3, ignore unnecessary files
 
@@ -108,7 +108,7 @@ if [ ! -s ${file_out}/task-${task}_summ-mot-acc-rt.csv ] ; then
 	echo "Subject,Session,mFD_run1,mFD_run2,acc_run1,acc_run2,mrt_run1,mrt_run2" > ${file_out}/task-${task}_summ-mot-acc-rt.csv
 fi
 	
-python ${script_dir}.extract_values.py ${tmp_in} ${sub} ${ses_r} ${task} 
+python ${script_dir}/extract_values.py ${tmp_in} ${sub} ${ses_r} ${task} 
 motbeh_error=$?
 
 if [ ${motbeh_error} -eq 0 ]; then
@@ -134,7 +134,7 @@ echo "sub: ${sub}"
 echo "data_preproc: ${tmp_in}"
 echo "analysis_out: ${firstlvl_fold}"
 
-python -m ${script_dir}.runs_withinrun_permutations.py abcd --sub ${sub} --task ${task} --ses $ses_r --numvols 403 --boldtr .800 --beh_path ${beh_dat}/${ses_r}_${task} --fmriprep_path ${tmp_in} --mask ${mask_path} --mask_label mni152 --output ${firstlvl_fold}
+python ${script_dir}/runs_withinrun_permutations.py --sample abcd --sub ${sub} --task ${task} --ses $ses_r --numvols 403 --boldtr .800 --beh_path ${tmp_in} --fmriprep_path ${tmp_in} --mask ${mask_path} --mask_label mni152 --output ${firstlvl_fold}
 firstlvl_error=$?
 
 if [ ${firstlvl_error} -eq 0 ]; then
@@ -158,7 +158,7 @@ echo "sub: ${sub}"
 echo "First lvl input: ${firstlvl_fold}"
 echo "Fixed scratch out: ${fixeff_fold}"
 
-python -m ${script_dir}.runs_withinsession_permutations.py --sample abcd --sub ${sub} --task ${task} --ses $ses_r --firstlvl_inp ${firstlvl_fold} --mask ${mask_path} --mask_label mni152 --output ${fixeff_fold}
+python ${script_dir}/runs_withinsession_permutations.py --sample abcd --sub ${sub} --task ${task} --ses $ses_r --firstlvl_inp ${firstlvl_fold} --mask ${mask_path} --mask_label mni152 --output ${fixeff_fold}
 fixeff_error=$?
 
 if [ ${fixeff_error} -eq 0 ]; then
