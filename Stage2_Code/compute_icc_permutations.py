@@ -80,5 +80,5 @@ brain_models = brain_icc.voxelwise_icc(multisession_list = [set1, set2],
                                         mask=mask, icc_type='icc_3')
 
 for img_type in ['est', 'msbtwn', 'mswthn']:
-    out_icc_path = f'{out_path}/subs-{len(set1)}_type-{type}_task-MID_mask-{mask_label}_stat-{img_type}.nii.gz'
+    out_icc_path = f'{out_path}/subs-{len(set1)}_type-{type}_mask-{mask_label}_{model}_stat-{img_type}.nii.gz'
     nib.save(brain_models[img_type], out_icc_path)
