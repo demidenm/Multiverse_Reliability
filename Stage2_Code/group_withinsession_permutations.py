@@ -1,9 +1,7 @@
 import os
 import argparse
 import pandas as pd
-import numpy as np
 from glob import glob
-from itertools import product
 from nilearn.glm.second_level import SecondLevelModel
 import warnings
 warnings.filterwarnings("ignore")
@@ -11,7 +9,7 @@ warnings.filterwarnings("ignore")
 
 def group_onesample(fixedeffect_paths: list, session: str, task_type: str,
                     contrast_type: str, group_outdir: str,
-                    model_permutation: str, mask: str = None):
+                    model_permutation: str, level: str, mask: str = None):
     """
     This function takes in a list of fixed effect files for a select contrast and
     calculates a group (secondlevel) model by fitting an intercept to length of maps.
@@ -22,6 +20,7 @@ def group_onesample(fixedeffect_paths: list, session: str, task_type: str,
     :param task_type: string task label, BIDS label e.g., mid
     :param contrast_type: contrast type saved from fixed effect models
     :param model_permutation: complete string of model permutation, e.g., 'fwhm-4_mot-opt1_mod-AntMod'
+    :param level: run or group level map? e.g. run-01, run-02, ses-1 or ses-baselinearm1
     :param group_outdir: path to folder to save the group level models
     :param mask: path to mask, default none
     :return: nothing return, files are saved
@@ -50,7 +49,7 @@ def group_onesample(fixedeffect_paths: list, session: str, task_type: str,
     )
 
     # group out file, naming subs-N
-    tstat_out = f'{group_outdir}/subs-{N_maps}_ses-{session}_task-{task_type}_contrast-{contrast_type}' \
+    tstat_out = f'{group_outdir}/subs-{N_maps}_ses-{session}_task-{task_type}_{level}_contrast-{contrast_type}' \
                 f'_{model_permutation}_stat-tstat.nii.gz'
     tstat_map.to_filename(tstat_out)
 
@@ -59,9 +58,11 @@ parser = argparse.ArgumentParser(description="Script to run first level task mod
 parser.add_argument("--sample", help="sample type, ahrb, abcd or mls?")
 parser.add_argument("--task", help="task type -- e.g., mid, reward, etc")
 parser.add_argument("--ses", help="session, include the session type without prefix, e.g., 1, 01, baselinearm1")
-parser.add_argument("--model", help="model permutation, e.g. contrast-Sgain-Neut_mask-mni152_mot-opt5_mod-FixMod_fwhm-6.0")
+parser.add_argument("--type", help="type of group -- run-01 or session-baselinearm1")
+parser.add_argument("--model", help="model permutation,"
+                                    " e.g. contrast-Sgain-Neut_mask-mni152_mot-opt5_mod-FixMod_fwhm-6.0")
 parser.add_argument("--mask", help="path the to the binarized brain mask (e.g., MNI152 or "
-                                 "constrained mask in MNI space, or None")
+                                   "constrained mask in MNI space, or None")
 parser.add_argument("--mask_label", help="label for mask, e.g. subtresh, suprathresh, yeo-network, or None")
 parser.add_argument("--input", help="input path to data")
 parser.add_argument("--output", help="output folder where to write out and save information")
@@ -72,6 +73,7 @@ args = parser.parse_args()
 sample = args.sample
 task = args.task
 ses = args.ses
+type = args.type
 brainmask = args.mask
 mask_label = args.mask_label
 model = args.model
@@ -92,4 +94,4 @@ for contrast in contrasts:
                            f'contrast-{contrast}_{model}_stat-beta.nii.gz'))
     group_onesample(fixedeffect_paths=fix_maps, session=ses, task_type=task,
                     contrast_type=contrast, group_outdir=scratch_out,
-                    model_permutation=model, mask=brainmask)
+                    model_permutation=model, mask=brainmask, level=type)
