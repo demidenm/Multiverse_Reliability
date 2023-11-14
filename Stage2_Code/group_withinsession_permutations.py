@@ -90,7 +90,7 @@ for contrast in contrasts:
     print(f'\t Working on contrast map: {contrast}')
 
     # find all contrast fixed effect maps for model permutation across subjects
-    fix_maps = sorted(glob(f'{fix_dir}/*_{ses}_task-{task}_*'
+    fix_maps = sorted(glob(f'{fix_dir}/*_ses-{ses}_task-{task}_*'
                            f'contrast-{contrast}_{model}_stat-beta.nii.gz'))
     group_onesample(fixedeffect_paths=fix_maps, session=ses, task_type=task,
                     contrast_type=contrast, group_outdir=scratch_out,
