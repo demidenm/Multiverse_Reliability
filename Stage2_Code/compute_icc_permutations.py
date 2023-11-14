@@ -62,6 +62,7 @@ if not os.path.exists(mask):
 if 'run' == type:
     set1 = sorted(glob(f'{inp_path}/ses-{ses}/**/*_ses-{ses}_task-MID_run-01_{model}_stat-beta.nii.gz'))
     set2 = sorted(glob(f'{inp_path}/ses-{ses}/**/*_ses-{ses}_task-MID_run-02_{model}_stat-beta.nii.gz'))
+    assert len(set1) > 0 and len(set2) > 0, f'Length of set1 [{len(set1)}] and/or set2 [{len(set2)}] is zero.'
     assert len(set1) == len(set2), f'Lengths of set1 [{len(set1)}] and set2 [{len(set2)}] are not equal.'
     match_string_position = all(
         a.split('_')[1:3] == b.split('_')[1:3] and a.split('_')[5:] == b.split('_')[5:] for a, b in zip(set1, set2))
