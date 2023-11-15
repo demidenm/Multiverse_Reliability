@@ -1,0 +1,48 @@
+# Define directories
+curr_dir=`pwd`
+script_dir=${curr_dir}/..
+sample=SAMPLE
+task=TASK
+ses=SESSION
+type=TYPE
+model=MODEL
+sub_list=SUBJ_IDS
+mask=${curr_dir}/../brain_mask/MNI152NLin2009cAsym_res-02_desc-brain_mask.nii.gz
+fixed_in=INPUT
+group_dir=OUTPUT
+tmp_dir=/tmp/${USER}/fixedeff/ses-${ses}
+group_scratch=/tmp/group/${sample}_${type}
+group_out=${group_dir}/${sample}_${type}
+
+[ ! -d ${group_scratch} ] && echo "group scratch directory exists" | mkdir -p ${group_scratch}
+[ ! -d ${group_out} ] && echo "group out directory exists" | mkdir -p ${group_out}
+[ ! -d ${tmp_dir} ] && echo "group out directory exists" | mkdir -p ${tmp_dir}
+
+# cp subjs to tmpdir
+cat ${sub_list} | while read line ; do 
+	cp -r ${fixed_in}/ses-${ses}/sub-${line}/sub-${line}_ses-${ses}_task-${task}_run-02_*_${model}_stat-beta.nii.gz ${tmp_dir}
+done 
+
+# run python script
+echo "Sample Type: ${sample}"
+echo "Run: ${type}"
+echo "Subject List: ${sub_list}"
+echo "Fixed lvl input: ${tmp_dir}"
+echo "Group scratch out: ${group_scratch}"
+echo "Group oak out: ${group_out}"
+
+python ${script_dir}/group_withinsession_permutations.py --sample ${sample} --task ${task} --ses ${ses} --type ${type}-02 --mask ${mask} --mask_label mni-152 --model ${model} --input ${tmp_dir} --output ${group_scratch}
+grp_error=$?
+
+if [ ${grp_error} -eq 0 ]; then
+	echo "Python group level completed successfully!"
+else
+	echo "Python group level failed."
+	exit 1
+fi
+
+echo "Syncing files from scratch to analysis path. Deleted from scratch once sync'd" 
+rsync -av --remove-source-files ${group_scratch}/ ${group_out}/
+
+rm -r ${tmp_dir}
+rm -r ${group_scratch}
