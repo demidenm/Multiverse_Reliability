@@ -48,7 +48,7 @@ dict_rename_cuetype = {
 
 parser = argparse.ArgumentParser(description="Script to run first level task models w/ nilearn")
 
-parser.add_argument("--sample", help="sample type, ahrb, abcd or mls?")
+parser.add_argument("--sample", help="sample type, abcd, AHRB, MLS?")
 parser.add_argument("--sub", help="subject name, sub-XX, include entirety with 'sub-' prefix")
 parser.add_argument("--task", help="task type -- e.g., mid, reward, etc")
 parser.add_argument("--ses", help="session, include the session type without prefix, e.g., 1, 01, baselinearm1")
@@ -103,11 +103,11 @@ contrast_weights = {
 runs = ['01', '02']
 
 # Model permutations
-if sample in ['abcd', 'ahrb']:
+if sample in ['abcd', 'AHRB']:
     voxel = 2.4
     opts = np.array([1.5,  2, 2.5, 3, 3.5])
     fwhm_opt = list(np.round(voxel * opts, 2))
-elif sample in 'mls':
+elif sample in 'MLS':
     voxel = 2.4
     inh_smooth_weight = .75
     opts = np.array([1.5, 2, 2.5, 3, 3.5])*inh_smooth_weight

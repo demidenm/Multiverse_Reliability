@@ -1,0 +1,575 @@
+---
+title: "Reliability_SimSummary"
+author: "<h3>by Michael Demidenko</h3>"
+date: "`r format(Sys.time(), '%B %Y')`"
+output:
+  html_document:
+    theme: united
+    highlight: tango
+    toc: yes
+    number_sections: yes
+    toc_depth: 2
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+    code_folding: hide
+    self_contained: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
+tags: []
+subtitle: <h2><u>Reliability, fMRI, tasks </u></h2>
+---
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+if (!require("pacman")) install.packages("pacman")
+
+pacman::p_load(tidyverse, ggplot2, knitr, kableExtra, ggpubr, lme4, sjPlot, specr, ggrain, neuRosim, emmeans, zoo, stringr)
+
+session_info = sessionInfo()
+system=session_info[[1]][1]
+R_vers = session_info[[1]][13]
+```
+
+The packages are automatically loaded using `pacman`. The reported .html was last ran on the system: `r system` and R version: `r R_vers`
+
+***
+***
+In the Stage 1 [PCI Registered Report](https://doi.org/10.17605/OSF.IO/NQGEH) we are focused on Individual Continues (intraclass correlation) and the binary/continuoues group similarity (jaccard and spearman). Related to the descriptive file here, we describe each step that contained within this file that is relevant to the registered analyses
+
+**continuous**
+
+We stated:
+
+Aim1: *HLM is used to regress the median ICC on the [four] analytic decisions as fixed effects with a random intercept and random slope for study across the suprathreshold task-positive and subthreshold maps. If the model does not converge, a random intercept only model will be fit (Matuschek et al., 2017). Multiple comparisons corrections are applied using the Tukey adjustment as implemented in the emmeans package (Lenth et al., 2023). For these HLM models, the interpretation focuses on the significant, non-zero effect of an independent variable (e.g., smoothing) on the dependent *
+
+Aim2: *two HLMs are used to regress the MSBS and MSWS from the median ICC estimate on the [four] analytic decisions as fixed effects with a random intercept and random slope for study across the suprathreshold task-positive and subthreshold maps. If the model does not converge, a random intercept only model will be fit. Multiple comparisons corrections are applied using the Tukey adjustment. Like Aim 1, the interpretation focuses on the significant, non-zero effect of an independent variable (e.g., smoothing) on the dependent variable (e.g., median ICC) while the remaining independent variables are assumed to be zero.*
+
+**group similarity**
+
+We stated:
+
+Aim1: *two HLMs are used to regress the MSBS and MSWS from the median ICC estimate on the [four] analytic decisions as fixed effects with a random intercept and random slope for study across the suprathreshold task-positive and subthreshold maps. If the model does not converge, a random intercept only model will be fit. Multiple comparisons corrections are applied using the Tukey adjustment. Like Aim 1, the interpretation focuses on the significant, non-zero effect of an independent variable (e.g., smoothing) on the dependent variable (e.g., median ICC) while the remaining independent variables are assumed to be zero.*
+
+***
+***
+
+# Load data {.tabset}
+
+## ABCD
+```{r}
+# ICC
+abcd_icc_subthresh <- read.csv("output/sample-abcd_type-run_stats-est_mask-wilson-sub.tsv", sep = '\t')
+abcd_icc_subthresh$study <- "abcd"
+abcd_icc_suprathresh <- read.csv("output/sample-abcd_type-run_stats-est_mask-wilson-supra.tsv", sep = '\t')
+abcd_icc_suprathresh$study <- "abcd"
+# MSBS
+abcd_bs_subthresh <- read.csv("output/sample-abcd_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
+abcd_bs_subthresh$study <- "abcd"
+abcd_bs_suprathresh <- read.csv("output/sample-abcd_type-run_stats-bs_mask-wilson-supra.tsv", sep = '\t')
+abcd_bs_suprathresh$study <- "abcd"
+# MSWS
+abcd_ws_subthresh <- read.csv("output/sample-abcd_type-run_stats-ws_mask-wilson-sub.tsv", sep = '\t')
+abcd_ws_subthresh$study <- "abcd"
+abcd_ws_suprathresh <- read.csv("output/sample-abcd_type-run_stats-ws_mask-wilson-supra.tsv", sep = '\t')
+abcd_ws_suprathresh$study <- "abcd"
+
+# similarity
+abcd_similarity <- read.csv("output/sample-abcd_type-run_stats-similarity.tsv", sep = '\t')
+abcd_similarity$study <- "abcd"
+```
+
+## AHRB (test, dup abcd)
+
+[UPDATE PATH sample-abcd when data is available]
+```{r}
+# ICC
+ahrb_icc_subthresh <- read.csv("output/sample-abcd_type-run_stats-est_mask-wilson-sub.tsv", sep = '\t')
+ahrb_icc_subthresh$study <- "ahrb"
+ahrb_icc_suprathresh <- read.csv("output/sample-abcd_type-run_stats-est_mask-wilson-supra.tsv", sep = '\t')
+ahrb_icc_suprathresh$study <- "ahrb"
+# MSBS
+ahrb_bs_subthresh <- read.csv("output/sample-abcd_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
+ahrb_bs_subthresh$study <- "ahrb"
+ahrb_bs_suprathresh <- read.csv("output/sample-abcd_type-run_stats-bs_mask-wilson-supra.tsv", sep = '\t')
+ahrb_bs_suprathresh$study <- "ahrb"
+# MSWS
+ahrb_ws_subthresh <- read.csv("output/sample-abcd_type-run_stats-ws_mask-wilson-sub.tsv", sep = '\t')
+ahrb_ws_subthresh$study <- "ahrb"
+ahrb_ws_suprathresh <- read.csv("output/sample-abcd_type-run_stats-ws_mask-wilson-supra.tsv", sep = '\t')
+ahrb_ws_suprathresh$study <- "ahrb"
+# similarity
+ahrb_similarity <- read.csv("output/sample-abcd_type-run_stats-similarity.tsv", sep = '\t')
+ahrb_similarity$study <- "ahrb"
+```
+
+## MLS (no data, do not run)
+```{r eval=FALSE, include=FALSE}
+# ICC
+mls_icc_subthresh <- read.csv("output/sample-mls_type-run_stats-est_mask-wilson-sub.tsv", sep = '\t')
+mls_icc_subthresh$study <- "mls"
+mls_icc_suprathresh <- read.csv("output/sample-mls_type-run_stats-est_mask-wilson-supra.tsv", sep = '\t')
+mls_icc_suprathresh$study <- "mls"
+# MSBS
+mls_bs_subthresh <- read.csv("output/sample-mls_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
+mls_bs_subthresh$study <- "mls"
+mls_bs_suprathresh <- read.csv("output/sample-mls_type-run_stats-bs_mask-wilson-supra.tsv", sep = '\t')
+mls_bs_suprathresh$study <- "mls"
+# MSWS
+mls_ws_subthresh <- read.csv("output/sample-mls_type-run_stats-ws_mask-wilson-sub.tsv", sep = '\t')
+mls_ws_subthresh$study <- "mls"
+mls_ws_suprathresh <- read.csv("output/sample-mls_type-run_stats-ws_mask-wilson-supra.tsv", sep = '\t')
+mls_ws_suprathresh$study <- "mls"
+# similarity
+mls_similarity <- read.csv("output/sample-mls_type-run_stats-similarity.tsv", sep = '\t')
+mls_similarity <- "mls"
+```
+
+## combine data
+
+```{r}
+# ICC
+icc_subthresh <- rbind(abcd_icc_subthresh, ahrb_icc_subthresh)#, mls_icc_subthresh)
+icc_subthresh <- icc_subthresh %>% mutate(
+    con = gsub("contrast-", "", con),
+    motion = gsub("mot-", "", motion),
+    model = gsub("mod-", "", model),
+    fwhm = gsub("fwhm-", "", fwhm)
+  ) %>% 
+  mutate(con = gsub("-", "", con))
+icc_suprathresh <- rbind(abcd_icc_suprathresh, ahrb_icc_suprathresh)#, mls_icc_suprathresh)
+icc_suprathresh <-  icc_suprathresh %>% mutate(
+    con = gsub("contrast-", "", con),
+    motion = gsub("mot-", "", motion),
+    model = gsub("mod-", "", model),
+    fwhm = gsub("fwhm-", "", fwhm)
+  ) %>% 
+  mutate(con = gsub("-", "", con))
+
+# MSBS
+bs_subthresh <- rbind(abcd_bs_subthresh, ahrb_bs_subthresh)#, mls_bs_subthresh)
+bs_subthresh <- bs_subthresh %>% mutate(
+    con = gsub("contrast-", "", con),
+    motion = gsub("mot-", "", motion),
+    model = gsub("mod-", "", model),
+    fwhm = gsub("fwhm-", "", fwhm)
+  ) %>% 
+  mutate(con = gsub("-", "", con))
+bs_suprathresh <- rbind(abcd_bs_suprathresh, ahrb_bs_suprathresh)#, mls_bs_suprathresh)
+bs_suprathresh <-  bs_suprathresh %>% mutate(
+    con = gsub("contrast-", "", con),
+    motion = gsub("mot-", "", motion),
+    model = gsub("mod-", "", model),
+    fwhm = gsub("fwhm-", "", fwhm)
+  ) %>% 
+  mutate(con = gsub("-", "", con))
+
+# MSWS
+ws_subthresh <- rbind(abcd_ws_subthresh, ahrb_ws_subthresh)#, mls_bs_subthresh)
+ws_subthresh <- ws_subthresh %>% mutate(
+    con = gsub("contrast-", "", con),
+    motion = gsub("mot-", "", motion),
+    model = gsub("mod-", "", model),
+    fwhm = gsub("fwhm-", "", fwhm)
+  ) %>% 
+  mutate(con = gsub("-", "", con))
+ws_suprathresh <- rbind(abcd_ws_suprathresh, ahrb_ws_suprathresh)#, mls_bs_suprathresh)
+ws_suprathresh <-  ws_suprathresh %>% mutate(
+    con = gsub("contrast-", "", con),
+    motion = gsub("mot-", "", motion),
+    model = gsub("mod-", "", model),
+    fwhm = gsub("fwhm-", "", fwhm)
+  ) %>% 
+  mutate(con = gsub("-", "", con))
+
+# similarity
+similarity_df <- rbind(abcd_similarity, ahrb_similarity)#, mls_similarity)
+similarity_df <-  similarity_df %>% 
+  mutate(con = gsub("-", "", con))
+similarity_df$fwhm <- as.character(similarity_df$fwhm)
+
+# remove excess files
+rm(ahrb_bs_subthresh, ahrb_bs_suprathresh, ahrb_icc_subthresh, ahrb_icc_suprathresh, ahrb_ws_subthresh, ahrb_ws_suprathresh,ahrb_similarity,
+   abcd_bs_subthresh, abcd_bs_suprathresh, abcd_icc_subthresh, abcd_icc_suprathresh, abcd_ws_subthresh, abcd_ws_suprathresh,abcd_similarity)
+   #mls_bs_subthresh, mls_bs_suprathresh, mls_icc_subthresh, mls_icc_suprathresh, mls_ws_subthresh, mls_ws_suprathresh,mls_similarity)
+```
+
+
+# Fitting HLM {.tabset}
+
+Below using `lmer` to fit HLM model. The model has random intercept (sample). e.g., Level 1 model: Median ICC ~ Beta Estimates. Level 2 model: Random intercept. For reproducible reporting using [tab_model](https://www.rdocumentation.org/packages/sjPlot/versions/2.8.4/topics/tab_model)
+
+Using [emmeans](https://www.rdocumentation.org/packages/emmeans/versions/1.3.2/topics/emmeans-package) to control type I error rate of controls via [Tukey's Honest Significant Test](https://en.wikipedia.org/wiki/Tukey%27s_range_test)
+
+## ICC
+
+### suprathreshold
+
+#### HLM Model
+
+
+```{r warning=FALSE}
+# including random slope & intercept for each
+#model = lmer(median_est ~ fwhm + motion + model + con + (fwhm + motion + model + con | study), data = icc_suprathresh)
+
+
+# if the above model does not converge, random intercept only model will be used:
+model = lmer(median_est ~ fwhm + motion + model + con + (1 | study), data = icc_subthresh)
+tab_model(model)
+```
+
+#### Tukey's emmeans
+
+```{r}
+# Model comparisons
+mod1_lmer_obs = as.numeric(summary(model)[3]$devcomp$dims[1])
+emm_options(lmerTest.limit = mod1_lmer_obs)
+
+
+# contrast fwhm
+mod1_thsd = emmeans(object = model, specs = pairwise ~ fwhm, pbkrtest.limit = mod1_lmer_obs)
+mod1_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: FWHM") %>%  kable_styling()
+
+
+# contrast task contrast
+mod2_thsd = emmeans(object = model, specs = pairwise ~ con, pbkrtest.limit = mod1_lmer_obs)
+mod2_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Contrast") %>%  kable_styling()
+
+# contrast motion
+mod3_thsd = emmeans(object = model, specs = pairwise ~ motion, pbkrtest.limit = mod1_lmer_obs)
+mod3_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Motion Corr") %>%  kable_styling()
+
+# contrast modeltype
+mod4_thsd = emmeans(object = model, specs = pairwise ~ model, pbkrtest.limit = mod1_lmer_obs)
+mod4_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Model Type ") %>%  kable_styling()
+```
+
+### subthreshold
+
+#### HLM Model
+
+```{r warning=FALSE}
+# including random slope & intercept for each
+#model = lmer(median_est ~ fwhm + motion + model + con + (fwhm + motion + model + con | study), data = icc_subthresh)
+
+
+# if the above model does not converge, random intercept only model will be used:
+model = lmer(median_est ~ fwhm + motion + model + con + (1 | study), data = icc_subthresh)
+tab_model(model)
+```
+
+#### Tukey's emmeans
+
+```{r}
+# Model comparisons
+mod1_lmer_obs = as.numeric(summary(model)[3]$devcomp$dims[1])
+emm_options(lmerTest.limit = mod1_lmer_obs)
+
+
+# contrast fwhm
+mod1_thsd = emmeans(object = model, specs = pairwise ~ fwhm, pbkrtest.limit = mod1_lmer_obs)
+mod1_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: FWHM") %>%  kable_styling()
+
+
+# contrast task contrast
+mod2_thsd = emmeans(object = model, specs = pairwise ~ con, pbkrtest.limit = mod1_lmer_obs)
+mod2_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Contrast") %>%  kable_styling()
+
+# contrast motion
+mod3_thsd = emmeans(object = model, specs = pairwise ~ motion, pbkrtest.limit = mod1_lmer_obs)
+mod3_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Motion Corr") %>%  kable_styling()
+
+# contrast modeltype
+mod4_thsd = emmeans(object = model, specs = pairwise ~ model, pbkrtest.limit = mod1_lmer_obs)
+mod4_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Model Type ") %>%  kable_styling()
+```
+
+
+## MSBS
+
+### suprathreshold
+
+#### HLM Model
+
+
+```{r warning=FALSE}
+# including random slope & intercept for each
+#model = lmer(median_est ~ fwhm + motion + model + con + (fwhm + motion + model + con | study), data = icc_suprathresh)
+
+
+# if the above model does not converge, random intercept only model will be used:
+model = lmer(median_est ~ fwhm + motion + model + con + (1 | study), data = bs_subthresh)
+tab_model(model)
+```
+
+#### Tukey's emmeans
+
+```{r}
+# Model comparisons
+mod1_lmer_obs = as.numeric(summary(model)[3]$devcomp$dims[1])
+emm_options(lmerTest.limit = mod1_lmer_obs)
+
+
+# contrast fwhm
+mod1_thsd = emmeans(object = model, specs = pairwise ~ fwhm, pbkrtest.limit = mod1_lmer_obs)
+mod1_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: FWHM") %>%  kable_styling()
+
+
+# contrast task contrast
+mod2_thsd = emmeans(object = model, specs = pairwise ~ con, pbkrtest.limit = mod1_lmer_obs)
+mod2_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Contrast") %>%  kable_styling()
+
+# contrast motion
+mod3_thsd = emmeans(object = model, specs = pairwise ~ motion, pbkrtest.limit = mod1_lmer_obs)
+mod3_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Motion Corr") %>%  kable_styling()
+
+# contrast modeltype
+mod4_thsd = emmeans(object = model, specs = pairwise ~ model, pbkrtest.limit = mod1_lmer_obs)
+mod4_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Model Type ") %>%  kable_styling()
+```
+
+### subthreshold
+
+#### HLM Model
+
+```{r warning=FALSE}
+# including random slope & intercept for each
+#model = lmer(median_est ~ fwhm + motion + model + con + (fwhm + motion + model + con | study), data = bs_subthresh)
+
+
+# if the above model does not converge, random intercept only model will be used:
+model = lmer(median_est ~ fwhm + motion + model + con + (1 | study), data = bs_subthresh)
+tab_model(model)
+```
+
+#### Tukey's emmeans
+
+```{r}
+# Model comparisons
+mod1_lmer_obs = as.numeric(summary(model)[3]$devcomp$dims[1])
+emm_options(lmerTest.limit = mod1_lmer_obs)
+
+
+# contrast fwhm
+mod1_thsd = emmeans(object = model, specs = pairwise ~ fwhm, pbkrtest.limit = mod1_lmer_obs)
+mod1_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: FWHM") %>%  kable_styling()
+
+
+# contrast task contrast
+mod2_thsd = emmeans(object = model, specs = pairwise ~ con, pbkrtest.limit = mod1_lmer_obs)
+mod2_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Contrast") %>%  kable_styling()
+
+# contrast motion
+mod3_thsd = emmeans(object = model, specs = pairwise ~ motion, pbkrtest.limit = mod1_lmer_obs)
+mod3_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Motion Corr") %>%  kable_styling()
+
+# contrast modeltype
+mod4_thsd = emmeans(object = model, specs = pairwise ~ model, pbkrtest.limit = mod1_lmer_obs)
+mod4_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Model Type ") %>%  kable_styling()
+```
+
+## MSWS
+
+### suprathreshold
+
+#### HLM Model
+
+
+```{r warning=FALSE}
+# including random slope & intercept for each
+#model = lmer(median_est ~ fwhm + motion + model + con + (fwhm + motion + model + con | study), data = icc_suprathresh)
+
+
+# if the above model does not converge, random intercept only model will be used:
+model = lmer(median_est ~ fwhm + motion + model + con + (1 | study), data = ws_subthresh)
+tab_model(model)
+```
+
+#### Tukey's emmeans
+
+```{r}
+# Model comparisons
+mod1_lmer_obs = as.numeric(summary(model)[3]$devcomp$dims[1])
+emm_options(lmerTest.limit = mod1_lmer_obs)
+
+
+# contrast fwhm
+mod1_thsd = emmeans(object = model, specs = pairwise ~ fwhm, pbkrtest.limit = mod1_lmer_obs)
+mod1_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: FWHM") %>%  kable_styling()
+
+
+# contrast task contrast
+mod2_thsd = emmeans(object = model, specs = pairwise ~ con, pbkrtest.limit = mod1_lmer_obs)
+mod2_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Contrast") %>%  kable_styling()
+
+# contrast motion
+mod3_thsd = emmeans(object = model, specs = pairwise ~ motion, pbkrtest.limit = mod1_lmer_obs)
+mod3_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Motion Corr") %>%  kable_styling()
+
+# contrast modeltype
+mod4_thsd = emmeans(object = model, specs = pairwise ~ model, pbkrtest.limit = mod1_lmer_obs)
+mod4_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Model Type ") %>%  kable_styling()
+```
+
+### subthreshold
+
+#### HLM Model
+
+```{r warning=FALSE}
+# including random slope & intercept for each
+#model = lmer(median_est ~ fwhm + motion + model + con + (fwhm + motion + model + con | study), data = ws_subthresh)
+
+
+# if the above model does not converge, random intercept only model will be used:
+model = lmer(median_est ~ fwhm + motion + model + con + (1 | study), data = ws_subthresh)
+tab_model(model)
+```
+
+#### Tukey's emmeans
+
+```{r}
+# Model comparisons
+mod1_lmer_obs = as.numeric(summary(model)[3]$devcomp$dims[1])
+emm_options(lmerTest.limit = mod1_lmer_obs)
+
+
+# contrast fwhm
+mod1_thsd = emmeans(object = model, specs = pairwise ~ fwhm, pbkrtest.limit = mod1_lmer_obs)
+mod1_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: FWHM") %>%  kable_styling()
+
+
+# contrast task contrast
+mod2_thsd = emmeans(object = model, specs = pairwise ~ con, pbkrtest.limit = mod1_lmer_obs)
+mod2_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Contrast") %>%  kable_styling()
+
+# contrast motion
+mod3_thsd = emmeans(object = model, specs = pairwise ~ motion, pbkrtest.limit = mod1_lmer_obs)
+mod3_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Motion Corr") %>%  kable_styling()
+
+# contrast modeltype
+mod4_thsd = emmeans(object = model, specs = pairwise ~ model, pbkrtest.limit = mod1_lmer_obs)
+mod4_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Model Type ") %>%  kable_styling()
+```
+
+## Similarity
+
+### Jaccard
+
+#### HLM Model
+
+
+```{r warning=FALSE}
+# including random slope & intercept for each
+#model = lmer(median_est ~ fwhm + motion + model + con + (fwhm + motion + model + con | study), data = icc_suprathresh)
+
+
+# if the above model does not converge, random intercept only model will be used:
+model = lmer(jaccard ~ fwhm + motion + model + con + (1 | study), data = similarity_df)
+tab_model(model)
+```
+
+#### Tukey's emmeans
+
+```{r}
+# Model comparisons
+mod1_lmer_obs = as.numeric(summary(model)[3]$devcomp$dims[1])
+emm_options(lmerTest.limit = mod1_lmer_obs)
+
+
+# contrast fwhm
+mod1_thsd = emmeans(object = model, specs = pairwise ~ fwhm, pbkrtest.limit = mod1_lmer_obs)
+mod1_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: FWHM") %>%  kable_styling()
+
+
+# contrast task contrast
+mod2_thsd = emmeans(object = model, specs = pairwise ~ con, pbkrtest.limit = mod1_lmer_obs)
+mod2_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Contrast") %>%  kable_styling()
+
+# contrast motion
+mod3_thsd = emmeans(object = model, specs = pairwise ~ motion, pbkrtest.limit = mod1_lmer_obs)
+mod3_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Motion Corr") %>%  kable_styling()
+
+# contrast modeltype
+mod4_thsd = emmeans(object = model, specs = pairwise ~ model, pbkrtest.limit = mod1_lmer_obs)
+mod4_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Model Type ") %>%  kable_styling()
+```
+
+### Spearman
+
+#### HLM Model
+
+```{r warning=FALSE}
+# including random slope & intercept for each
+#model = lmer(median_est ~ fwhm + motion + model + con + (fwhm + motion + model + con | study), data = ws_subthresh)
+
+
+# if the above model does not converge, random intercept only model will be used:
+model = lmer(spearman ~ fwhm + motion + model + con + (1 | study), data = similarity_df)
+tab_model(model)
+```
+
+#### Tukey's emmeans
+
+```{r}
+# Model comparisons
+mod1_lmer_obs = as.numeric(summary(model)[3]$devcomp$dims[1])
+emm_options(lmerTest.limit = mod1_lmer_obs)
+
+
+# contrast fwhm
+mod1_thsd = emmeans(object = model, specs = pairwise ~ fwhm, pbkrtest.limit = mod1_lmer_obs)
+mod1_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: FWHM") %>%  kable_styling()
+
+
+# contrast task contrast
+mod2_thsd = emmeans(object = model, specs = pairwise ~ con, pbkrtest.limit = mod1_lmer_obs)
+mod2_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Contrast") %>%  kable_styling()
+
+# contrast motion
+mod3_thsd = emmeans(object = model, specs = pairwise ~ motion, pbkrtest.limit = mod1_lmer_obs)
+mod3_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Motion Corr") %>%  kable_styling()
+
+# contrast modeltype
+mod4_thsd = emmeans(object = model, specs = pairwise ~ model, pbkrtest.limit = mod1_lmer_obs)
+mod4_thsd$contrasts %>% summary(infer = TRUE) %>% 
+  kbl(digits = 4, caption = "Contrast Tukey HSD: Model Type ") %>%  kable_styling()
+```
+
+
+
+# Stability of the correlation
+
+
+
