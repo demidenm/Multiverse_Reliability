@@ -1,0 +1,77 @@
+#!/bin/bash
+
+# define variables
+deriv_dir=/oak/stanford/groups/russpold/data/AHRB/derivatives
+curr_dir=`pwd`
+ses=ses-SESSION
+ses_r=SESSION
+sub=sub-SUBJECT
+fmriprep=fmriprep_23.1.4
+mriqc=${deriv_dir}/mriqc_23.1.0
+task=mid
+inp_dat=${deriv_dir}/${fmriprep}
+beh_dat=${out_dir}/..
+mask_path=${curr_dir}/../brain_mask/MNI152NLin2009cAsym_res-02_desc-brain_mask.nii.gz
+file_out=/scratch/groups/russpold/${USER}/analyses_reliability
+vol_info_file=${file_out}/vol_info.tsv
+firstlvl_fold=${deriv_dir}/analyses/proj_reliability/firstlvl/${ses}/${sub}
+first_scratch=${file_out}/firstlvl/${ses}/${sub}
+fixeff_fold=${deriv_dir}/analyses/proj_reliability/fixedeff/${ses}/${sub}
+fixed_scratch=${file_out}/fixedeff/${ses}/${sub}
+script_dir=${curr_dir}/..
+
+# Output summary statistics
+[ ! -d ${file_out} ] && echo "analyses out directory exists" | mkdir -p ${file_out}
+
+
+# RUN FIRST LEVELS
+
+[ ! -d ${firstlvl_fold} ] && echo "analyses out directory exists" | mkdir -p ${firstlvl_fold} 
+[ ! -d ${first_scratch} ] && echo "analyses scratch path exists" | mkdir -p ${first_scratch}
+
+echo "#### Starting First level run GLMs ####"
+# run python script
+echo "sub: ${sub}"
+echo "data_preproc: ${inp_dat}"
+echo "analysis scratch: ${first_scratch}"
+echo "copy to first oak: ${firstlvl_fold}"
+
+python ${script_dir}/runs_withinrun_permutations.py --sample ahrb --stc False --sub ${sub} --task ${task} --ses $ses_r --numvols 403 --boldtr .800 --beh_path ${beh_dat} --fmriprep_path ${inp_dat} --mask ${mask_path} --mask_label mni152 --output ${first_scratch}
+firstlvl_error=$?
+
+if [ ${firstlvl_error} -eq 0 ]; then
+	echo "Python first level completed successfully!"
+else
+	echo "Python first level failed."
+	exit 1
+fi
+
+echo "sync'ing scratch to oak dir"
+rsync -av --remove-source-files ${file_out}/firstlvl/${ses}/ ${firstlvl_fold}
+echo
+echo
+echo "#### Starting Precision Weighted Fixed Effect ####" 
+
+# Define directories
+
+[ ! -d ${fixeff_fold} ] && echo "fixed out directory exists" | mkdir -p ${fixeff_fold} 
+[ ! -d ${fixed_scratch} ] && echo "analyses scratch path exists" | mkdir -p ${fixed_scratch}
+
+# run python script
+echo "sub: ${sub}"
+echo "First lvl input: ${firstlvl_fold}"
+echo "Fixed scratch out: ${fixed_scratch}"
+echo "Fixed lvl sync: ${fixeff_fold}"
+
+python ${script_dir}/runs_withinsession_permutations.py --sample abcd --sub ${sub} --task ${task} --ses $ses_r --firstlvl_inp ${firstlvl_fold} --mask ${mask_path} --mask_label mni152 --output ${fixed_scratch}
+fixeff_error=$?
+
+if [ ${fixeff_error} -eq 0 ]; then
+        echo "Python fixed effect completed successfully!"
+else
+        echo "Python first effect failed."
+        exit 1
+fi
+
+echo "sync'ing scratch to oak dir"
+rsync -av --remove-source-files ${file_out}/fixedeff/${ses}/ ${fixeff_fold}

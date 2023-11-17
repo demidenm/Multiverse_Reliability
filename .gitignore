@@ -20,10 +20,10 @@ Stage1_Code/__pycache__/designmat_regressors_define.cpython-38.pyc
 Stage1_Code/__pycache__/susan_smooth.cpython-38.pyc
 Stage1_Code/.Rhistory
 .idea/workspace.xml
-Stage2_Code/cluster_jobs/batch_abcd/
 Stage2_Code/cluster_jobs/log_abcd/ 
 Stage2_Code/cluster_jobs/subj_ids/
-Stage2_Code/cluster_jobs/batch_run-abcd/
 Stage2_Code/__pycache__/
 Stage2_Code/cluster_jobs/log_abcd/*
-Stage2_Code/.Rhistory
+Stage2_Code/cluster_jobs/batch_jobs/
+Stage2_Code/cluster_jobs/logs_ahrb/*
+Stage2_Code/cluster_jobs/subj_id/
