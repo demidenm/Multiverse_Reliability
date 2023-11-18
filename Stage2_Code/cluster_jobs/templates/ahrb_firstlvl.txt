@@ -175,7 +175,7 @@ if [ ${fixeff_error} -eq 0 ]; then
         echo "Python fixed effect completed successfully!"
 	${tmp_in}/${sub}/
 	echo "sync'ing scratch to oak dir"
-	rsync -av --remove-source-files ${file_out}/fixedeff/${ses}/${sub} ${fixeff_fold}
+	rsync -av --remove-source-files ${file_out}/fixedeff/${ses}/${sub}/ ${fixeff_fold}
 else
         echo "Python first effect failed."
         exit 1
