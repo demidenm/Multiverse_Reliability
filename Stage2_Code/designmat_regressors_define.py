@@ -45,7 +45,7 @@ def pull_regressors(confound_path: str, regressor_type: str = 'opt1') -> pd.Data
     confound_df = pd.read_csv(confound_df, sep='\t', na_values=['n/a']).fillna(0)
 
     # Setting up dictionary from which to pull confound list
-    if regressor_type != 'opt5':
+    if regressor_type != 'opt4':
         confound_dict = {
             "opt1": ['cosine00', 'cosine01', 'cosine02', 'cosine03'],
             "opt2": ['cosine00', 'cosine01', 'cosine02', 'cosine03',

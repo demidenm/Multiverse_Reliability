@@ -130,7 +130,7 @@ for run in runs:
         # import behavior events .tsv from data path
         events_df = pd.read_csv(f'{beh_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_run-{run}_events.tsv',
                                 sep='\t')
-        
+
         if sample == 'abcd':
             events_df = events_df.rename(columns=dict_renamecols_abcd)
             events_df['TRIAL_TYPE'] = events_df['TRIAL_TYPE'].replace(dict_rename_cuetype)

@@ -105,7 +105,8 @@ elif sample in 'MLS':
     opts = np.array([1.5, 2, 2.5, 3, 3.5])*inh_smooth_weight
     fwhm_opt = list(np.round(voxel * opts, 2))
 
-motion_opt = ["opt1", "opt2", "opt3", "opt4", "opt5"]
+motion_opt = ["opt1", "opt2", "opt3", "opt4"]
+# only including 4; opt 5 is opt3 + subj mFD < .9 & opt6 is opt4 + subj mFD < .9
 modtype_opt = ["CueMod", "AntMod", "FixMod"]
 
 permutation_list = list(product(fwhm_opt, motion_opt, modtype_opt))
