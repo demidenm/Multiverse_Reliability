@@ -1,27 +1,128 @@
 #!/bin/bash
 
 # define variables
-deriv_dir=/oak/stanford/groups/russpold/data/AHRB/derivatives
+sample=SAMPLE
+data_dir=DATA_LOC
 curr_dir=`pwd`
 ses=ses-SESSION
 ses_r=SESSION
-sub=sub-SUBJECT
+sub=SUBJECT
+n_vols=403
+tr_sec=.800
 fmriprep=fmriprep_23.1.4
-mriqc=${deriv_dir}/mriqc_23.1.0
-task=mid
-inp_dat=${deriv_dir}/${fmriprep}
-beh_dat=${out_dir}/..
+task=TASK
+inp_dat=${data_dir}/derivatives/${fmriprep}
+beh_dat=${data_dir}/derivatives/taskdescribe_v1.0
 mask_path=${curr_dir}/../brain_mask/MNI152NLin2009cAsym_res-02_desc-brain_mask.nii.gz
 file_out=/scratch/groups/russpold/${USER}/analyses_reliability
 vol_info_file=${file_out}/vol_info.tsv
-firstlvl_fold=${deriv_dir}/analyses/proj_reliability/firstlvl/${ses}/${sub}
+tmp_in=/scratch/groups/russpold/${USER}/${sample}
+firstlvl_fold=${data_dir}/derivatives/analyses/proj_reliability/firstlvl/${ses}/${sub}
 first_scratch=${file_out}/firstlvl/${ses}/${sub}
-fixeff_fold=${deriv_dir}/analyses/proj_reliability/fixedeff/${ses}/${sub}
+fixeff_fold=${data_dir}/derivatives/analyses/proj_reliability/fixedeff/${ses}/${sub}
 fixed_scratch=${file_out}/fixedeff/${ses}/${sub}
 script_dir=${curr_dir}/..
 
-# Output summary statistics
+# Create tmp folder and pull relevant data to work with
+echo "Copying ${task} files for $sub from derivatives for fmriprep and behavior"
+
+mkdir -p ${tmp_in}/${sub}/${ses}/func/
 [ ! -d ${file_out} ] && echo "analyses out directory exists" | mkdir -p ${file_out}
+
+# get list files to pull
+filenames=($(ls ${inp_dat}/${sub}/${ses}/func/ \
+                | grep "${task}" \
+                | awk '{ print $NF }'))
+
+# Check if the array is empty or not
+if [ ${#filenames[@]} -eq 0 ]; then
+	echo "No filenames found or all filenames are zero."
+	exit 1
+else
+	for filename in "${filenames[@]}"; do        
+		cp ${inp_dat}/${sub}/${ses}/func/${filename} ${tmp_in}/${sub}/${ses}/func/
+	done
+fi
+
+cp ${beh_dat}/${ses_r}_${task}/${sub}_${ses}_task-${task}_beh-descr.json ${tmp_in}/${sub}/${ses}/func/
+cp ${data_dir}/${sub}/${ses}/func/${sub}_${ses}_task-${task}_*_events.tsv ${tmp_in}/${sub}/${ses}/func/
+
+
+# trim excess vols (length for AHRB should be 403 TRs, depending on BIDS conversion was either on dicom (407) or uploaded (403)
+echo "#### Modifying runs .nii and .tsv to match target length ####"
+target_vols=403
+declare -A vols_run
+declare -A diff_vols_run
+declare -A len_conf_run
+declare -A newvols_run
+
+# Loop over the runs
+for run in $(seq 1 2); do
+	echo "Modifying Run: ${run} "
+	# Calculate vols and diff_vols
+	vols_run[$run]=$(fslinfo "${tmp_in}/${sub}/${ses}/func/${sub}_${ses}_task-${task}_run-0${run}_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz" \
+		| grep -w "dim4" \
+		| awk -F" " '{ print $2 }')
+
+	diff_vols_run[$run]=$((vols_run[$run] - target_vols))
+
+	# Output the difference	
+	echo "Difference from target 407. Run${run}: ${diff_vols_run[$run]}"
+
+	# Extract volumes using fslroi and cut fmriprep confound rows
+	fslroi "${tmp_in}/${sub}/${ses}/func/${sub}_${ses}_task-${task}_run-0${run}_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz" \
+		"${tmp_in}/${sub}/${ses}/func/${sub}_${ses}_task-${task}_run-0${run}_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz" \
+		${diff_vols_run[$run]} ${target_vols}
+
+	remove_run=$((diff_vols_run[$run] + 1))
+	sed -i "2,${remove_run}d" "${tmp_in}/${sub}/${ses}/func/${sub}_${ses}_task-${task}_run-0${run}_desc-confounds_timeseries.tsv"
+	len_conf_run[$run]=$(cat "${tmp_in}/${sub}/${ses}/func/${sub}_${ses}_task-${task}_run-0${run}_desc-confounds_timeseries.tsv" | wc -l)
+
+	# new vols calc
+	newvols_run[$run]=$(fslinfo "${tmp_in}/${sub}/${ses}/func/${sub}_${ses}_task-${task}_run-0${run}_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz" \
+                | grep -w "dim4" \
+                | awk -F" " '{ print $2 }')
+done
+
+# Output summary statistics
+echo
+echo "SUMMARY STATISTICS:"
+echo -e "run1_dim4 = ${vols_run[1]}\trun2_dim4 = ${vols_run[2]}\nrun1_vols_cut = ${diff_vols_run[1]}\trun2_vols_cut = ${diff_vols_run[2]}"
+echo -e "conf_len_run1 = ${len_conf_run[1]}\tconf_len_run2 = ${len_conf_run[2]}"
+
+# Append summary statistics to the volume info file
+echo -e "${sub}\t${vols_run[1]}\t${newvols_run[1]}\t${vols_run[2]}\t${newvols_run[2]}\t${diff_vols_run[1]}\t${diff_vols_run[2]}\t${len_conf_run[1]}\t${len_conf_run[2]}" >> ${vol_info_file}
+echo
+
+# Check if the value in ${newvols_run[1]} is less than 403
+if (( ${newvols_run[1]} < 403 )); then
+    echo "Failed, volumes below expected 403. Check data."
+# Check if the value in ${newvols_run[2]} is less than 403
+elif (( ${newvols_run[2]} < 403 )); then
+    echo "Failed, volumes below expected 403. Check data."
+else
+    echo "Values are >= 403. Proceeding..."
+fi
+
+
+# Output summary statistics check/create
+[ ! -d ${file_out} ] && echo "analyses out directory exists" | mkdir -p ${file_out}
+
+if [ ! -s ${file_out}/task-${task}_summ-mot-acc-rt.csv ] ; then
+	echo "Subject,Session,mFD_run1,mFD_run2,acc_run1,acc_run2,mrt_run1,mrt_run2" > ${file_out}/task-${task}_summ-mot-acc-rt.csv
+fi
+	
+python ${script_dir}/extract_values.py ${tmp_in} ${sub} ${ses_r} ${task} 
+motbeh_error=$?
+
+if [ ${motbeh_error} -eq 0 ]; then
+        echo "Python motion/behavior  completed successfully!"
+else
+    	echo "Python motion/behavior failed."
+        exit 1
+fi
+
+cat ${tmp_in}/${sub}/${ses}/func/task-${task}_summ-mot-acc-rt.csv | tail -n 1 >> ${file_out}/task-${task}_summ-mot-acc-rt.csv
 
 
 # RUN FIRST LEVELS
@@ -36,18 +137,20 @@ echo "data_preproc: ${inp_dat}"
 echo "analysis scratch: ${first_scratch}"
 echo "copy to first oak: ${firstlvl_fold}"
 
-python ${script_dir}/runs_withinrun_permutations.py --sample ahrb --stc False --sub ${sub} --task ${task} --ses $ses_r --numvols 403 --boldtr .800 --beh_path ${beh_dat} --fmriprep_path ${inp_dat} --mask ${mask_path} --mask_label mni152 --output ${first_scratch}
+
+echo "python ${script_dir}/runs_withinrun_permutations.py --sample ${sample} --stc False --sub ${sub} --task ${task} --ses ${ses_r} --numvols ${n_vols} --boldtr ${tr_sec} --beh_path ${tmp_in} --fmriprep_path ${tmp_in} --mask ${mask_path} --mask_label mni152 --output ${first_scratch}"
+python ${script_dir}/runs_withinrun_permutations.py --sample ${sample} --stc False --sub ${sub} --task ${task} --ses ${ses_r} --numvols ${n_vols} --boldtr ${tr_sec} --beh_path ${tmp_in} --fmriprep_path ${tmp_in} --mask ${mask_path} --mask_label mni152 --output ${first_scratch}
 firstlvl_error=$?
 
 if [ ${firstlvl_error} -eq 0 ]; then
 	echo "Python first level completed successfully!"
+	echo "sync'ing scratch to oak dir"
+	rsync -av --remove-source-files ${file_out}/firstlvl/${ses}/${sub}/ ${firstlvl_fold}
 else
 	echo "Python first level failed."
 	exit 1
 fi
 
-echo "sync'ing scratch to oak dir"
-rsync -av --remove-source-files ${file_out}/firstlvl/${ses}/ ${firstlvl_fold}
 echo
 echo
 echo "#### Starting Precision Weighted Fixed Effect ####" 
@@ -63,15 +166,17 @@ echo "First lvl input: ${firstlvl_fold}"
 echo "Fixed scratch out: ${fixed_scratch}"
 echo "Fixed lvl sync: ${fixeff_fold}"
 
-python ${script_dir}/runs_withinsession_permutations.py --sample abcd --sub ${sub} --task ${task} --ses $ses_r --firstlvl_inp ${firstlvl_fold} --mask ${mask_path} --mask_label mni152 --output ${fixed_scratch}
+echo "python ${script_dir}/runs_withinsession_permutations.py --sample ${sample} --sub ${sub} --task ${task} --ses ${ses_r} --firstlvl_inp ${firstlvl_fold} --mask ${mask_path} --mask_label mni152 --output ${fixed_scratch}"
+
+python ${script_dir}/runs_withinsession_permutations.py --sample ${sample} --sub ${sub} --task ${task} --ses ${ses_r} --firstlvl_inp ${firstlvl_fold} --mask ${mask_path} --mask_label mni152 --output ${fixed_scratch}
 fixeff_error=$?
 
 if [ ${fixeff_error} -eq 0 ]; then
         echo "Python fixed effect completed successfully!"
+	${tmp_in}/${sub}/
+	echo "sync'ing scratch to oak dir"
+	rsync -av --remove-source-files ${file_out}/fixedeff/${ses}/${sub} ${fixeff_fold}
 else
         echo "Python first effect failed."
         exit 1
 fi
-
-echo "sync'ing scratch to oak dir"
-rsync -av --remove-source-files ${file_out}/fixedeff/${ses}/ ${fixeff_fold}
