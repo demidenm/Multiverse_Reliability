@@ -49,12 +49,10 @@ def pull_regressors(confound_path: str, regressor_type: str = 'opt1') -> pd.Data
         confound_dict = {
             "opt1": ['cosine00', 'cosine01', 'cosine02', 'cosine03'],
             "opt2": ['cosine00', 'cosine01', 'cosine02', 'cosine03',
-                     'trans_x', 'trans_y', 'trans_z', 'rot_x', 'rot_y', 'rot_z'],
-            "opt3": ['cosine00', 'cosine01', 'cosine02', 'cosine03',
                      'trans_x', 'trans_y', 'trans_z', 'rot_x', 'rot_y', 'rot_z',
                      'trans_x_derivative1', 'trans_y_derivative1', 'trans_z_derivative1',
                      'rot_x_derivative1', 'rot_y_derivative1', 'rot_z_derivative1'],
-            "opt4": ['cosine00', 'cosine01', 'cosine02', 'cosine03',
+            "opt3": ['cosine00', 'cosine01', 'cosine02', 'cosine03',
                      'trans_x', 'trans_y', 'trans_z', 'rot_x', 'rot_y', 'rot_z',
                      'trans_x_derivative1', 'trans_y_derivative1', 'trans_z_derivative1',
                      'rot_x_derivative1', 'rot_y_derivative1', 'rot_z_derivative1',
@@ -64,13 +62,12 @@ def pull_regressors(confound_path: str, regressor_type: str = 'opt1') -> pd.Data
 
     else:
         confound_dict = {
-            "opt1": None,
-            "opt2": ['cosine00', 'cosine01', 'cosine02', 'cosine03'],
-            "opt3": ['cosine00', 'cosine01', 'cosine02', 'cosine03',
+            "opt1": ['cosine00', 'cosine01', 'cosine02', 'cosine03'],
+            "opt2": ['cosine00', 'cosine01', 'cosine02', 'cosine03',
                      'trans_x', 'trans_y', 'trans_z', 'rot_x', 'rot_y', 'rot_z',
                      'trans_x_derivative1', 'trans_y_derivative1', 'trans_z_derivative1',
                      'rot_x_derivative1', 'rot_y_derivative1', 'rot_z_derivative1'],
-            "opt4": ['cosine00', 'cosine01', 'cosine02', 'cosine03',
+            "opt3": ['cosine00', 'cosine01', 'cosine02', 'cosine03',
                      'trans_x', 'trans_y', 'trans_z', 'rot_x', 'rot_y', 'rot_z',
                      'trans_x_derivative1', 'trans_y_derivative1', 'trans_z_derivative1',
                      'rot_x_derivative1', 'rot_y_derivative1', 'rot_z_derivative1',
@@ -80,7 +77,7 @@ def pull_regressors(confound_path: str, regressor_type: str = 'opt1') -> pd.Data
 
         motion_outlier_columns = confound_df.filter(regex='motion_outlier')
         # append the motion outlier columns to in dict to opt3  as opt5
-        confound_dict['opt5'] = confound_dict['opt4'] + list(motion_outlier_columns.columns)
+        confound_dict['opt4'] = confound_dict['opt3'] + list(motion_outlier_columns.columns)
 
     return pd.DataFrame(confound_df[confound_dict[regressor_type]])
 

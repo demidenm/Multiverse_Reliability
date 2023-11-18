@@ -76,7 +76,6 @@ beh_path = args.beh_path
 fmriprep_path = args.fmriprep_path
 brainmask = args.mask
 mask_label = args.mask_label
-
 scratch_out = args.output
 
 # model design options, contrasts and weights setup
@@ -113,7 +112,8 @@ elif sample in 'MLS':
     opts = np.array([1.5, 2, 2.5, 3, 3.5])*inh_smooth_weight
     fwhm_opt = list(np.round(voxel * opts, 2))
 
-motion_opt = ["opt1", "opt2", "opt3", "opt4", "opt5"]
+motion_opt = ["opt1", "opt2", "opt3", "opt4"]
+# only including 4; opt 5 is opt3 + subj mFD < .9 & opt6 is opt4 + subj mFD < .9
 modtype_opt = ["CueMod", "AntMod", "FixMod"]
 
 permutation_list = list(product(fwhm_opt, motion_opt, modtype_opt))
@@ -124,60 +124,53 @@ for run in runs:
     comb_eff = pd.DataFrame(columns=[np.hstack(('model', 'run', list(contrast_weights.keys())))])
     count = 0
     for fwhm, motion, model in permutation_list:
-
         count = count + 1
         print('\t\t {}. Running model using: {}, {}, {}'.format(count, fwhm, motion, model))
         print('\t\t 1/5 Load Files & set paths')
         # import behavior events .tsv from data path
         events_df = pd.read_csv(f'{beh_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_run-{run}_events.tsv',
                                 sep='\t')
-
+        
         if sample == 'abcd':
             events_df = events_df.rename(columns=dict_renamecols_abcd)
             events_df['TRIAL_TYPE'] = events_df['TRIAL_TYPE'].replace(dict_rename_cuetype)
-        elif sample == 'mls':
+        elif sample == 'MLS':
             events_df = events_df.rename(columns=dict_renamecols_mls)
             events_df['TRIAL_TYPE'] = events_df['TRIAL_TYPE'].replace(dict_rename_cuetype)
         else:
-            continue
+            print("Assuming AHRB sample, continuing")
 
         # get path to confounds from fmriprep, func data + mask
+        # set image path
         conf_path = f'{fmriprep_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_run-{run}' \
-                    f'_desc-confounds_timeseries.tsv'
+                f'_desc-confounds_timeseries.tsv'
         nii_path = glob(
-            f'{fmriprep_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_run-{run}'
-            f'_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz')[0]
-
+        f'{fmriprep_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_run-{run}'
+        f'_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz')[0]
         print('\t\t 2/5 Create Regressors & Design Matrix for GLM')
         # get list of regressors
-        conf_regressors = pull_regressors(confound_path=conf_path, regressor_type=motion)
-
         # run to create design matrix
+        conf_regressors = pull_regressors(confound_path=conf_path, regressor_type=motion)
         design_matrix = create_design_mid(events_df=events_df, bold_tr=boldtr, num_volumes=numvols,
                                           onset_label=model_types[model][0],
                                           duration_label=model_types[model][1],
                                           conf_regressors=conf_regressors,
                                           hrf_model='spm', stc=stc)
-
         print('\t\t 3/5 Estimate design efficiency')
         # efficiency estimates
         con_matrix = pd.DataFrame(columns=design_matrix.columns)
         for contrast_name, contrast_dict in contrast_weights.items():
             con_matrix = con_matrix.append(pd.Series(contrast_dict, name=contrast_name))
-
         con_matrix = con_matrix.fillna(0)
         print(f'\t\t\t size of design matrix: {design_matrix.shape} & contrast matrix: {con_matrix.shape}')
-
         series_eff = pd.DataFrame(
             np.hstack((model, run, eff_estimator(np.array(design_matrix), np.array(con_matrix)))
                       ).reshape(1, -1),
             columns=[np.hstack(('model', 'run', list(contrast_weights.keys())))]
         )
-
         comb_eff = pd.concat([comb_eff, series_eff])
         eff_out_path = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_run-{run}_efficiency.tsv'
         comb_eff.to_csv(eff_out_path, index=False)
-
         print('\t\t 4/5 Mask Image, Fit GLM model ar1 autocorrelation')
         # using ar1 autocorrelation (FSL prewhitening), drift model
         fmri_glm = FirstLevelModel(subject_label=subj, mask_img=brainmask,
@@ -185,25 +178,20 @@ for run in runs:
                                    standardize=False, noise_model='ar1', drift_model=None, high_pass=None
                                    # cosine 0:3 included from fmriprep in design mat based on 128s calc
                                    )
-
         # Run GLM model using set paths and calculate design matrix
         run_fmri_glm = fmri_glm.fit(nii_path, design_matrices=design_matrix)
-
         print('\t\t 5/5: From GLM model, create z-score contrast maps and save to output path')
         # contrast names and associated contrasts in contrasts defined is looped over
         # contrast name is used in saving file, the contrast is used in deriving z-score
         for con_name, con in contrasts.items():
             mod_name = f'contrast-{con_name}_mask-{mask_label}_mot-{motion}_mod-{model}_fwhm-{fwhm}'
-
             beta_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_run-{run}_{mod_name}_stat-beta.nii.gz'
             beta_est = run_fmri_glm.compute_contrast(con, output_type='effect_size')
             beta_est.to_filename(beta_name)
-
             # Calc: variance
             var_name = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_run-{run}_{mod_name}_stat-var.nii.gz'
             var_est = run_fmri_glm.compute_contrast(con, output_type='effect_variance')
             var_est.to_filename(var_name)
-
             # Calc: residual variance
             # since eff is inverse 1/2, reverse multiple 2/1 for residual var
             var_data = var_est.get_fdata()
