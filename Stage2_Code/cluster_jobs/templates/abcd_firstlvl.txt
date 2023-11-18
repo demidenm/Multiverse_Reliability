@@ -1,13 +1,14 @@
 #!/bin/bash
 
 # define variables
+deriv_dir=s3://ABCD_BIDS/derivatives
 curr_dir=`pwd`
 ses=ses-SESSION
 ses_r=SESSION
 sub=sub-SUBJECT
 fmriprep=fmriprep_v23_1_4
 task=MID
-s3_bucket=s3://ABCD_BIDS/derivatives/${fmriprep}
+s3_bucket=${deriv_dir}/${fmriprep}
 beh_dat=${curr_dir}/../../../../../slurm_ABCD_s3/Beh_Data
 tmp_in=/tmp/processed
 mask_path=${curr_dir}/../brain_mask/MNI152NLin2009cAsym_res-02_desc-brain_mask.nii.gz
