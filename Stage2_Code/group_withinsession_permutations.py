@@ -1,10 +1,29 @@
 import os
+import warnings
 import argparse
 import pandas as pd
+import numpy as np
 from glob import glob
+from nilearn.image import load_img, new_img_like
 from nilearn.glm.second_level import SecondLevelModel
-import warnings
 warnings.filterwarnings("ignore")
+
+def nifti_tstat_to_cohensd(tstat_img, n):
+    """
+    function converts NIfTI t-statistic image to Cohen's d.
+
+    :param tstat_img: NIfTI image containing t-statistics, Nifti1Image.
+    :param n: Sample size for calculating Cohen's d, Integer
+    :return: NIfTI image containing Cohen's d.
+    """
+    # Get data array from the t-statistics image
+    t_data = tstat_img.get_fdata()
+    # Calculate Cohen's d using the t_stat / sqrt(n) formula
+    d_data = t_data / np.sqrt(n)
+    # Create a NIfTI image containing Cohen's d, with the same properties as the input image
+    cohensd_img = new_img_like(tstat_img, d_data)
+
+    return cohensd_img
 
 
 def group_onesample(fixedeffect_paths: list, session: str, task_type: str,
@@ -41,17 +60,17 @@ def group_onesample(fixedeffect_paths: list, session: str, task_type: str,
     sec_lvl_model = sec_lvl_model.fit(second_level_input=fixedeffect_paths,
                                       design_matrix=design_matrix)
 
-    # Calculate t-statistic from second lvl map
+    # Calculate t-statistic from second lvl map, then convert to cohen's d
     tstat_map = sec_lvl_model.compute_contrast(
         second_level_contrast='Intercept',
         second_level_stat_type='t',
         output_type='stat',
     )
-
+    cohensd_map = nifti_tstat_to_cohensd(tstat_map, N_maps)
     # group out file, naming subs-N
-    tstat_out = f'{group_outdir}/subs-{N_maps}_ses-{session}_task-{task_type}_{level}_contrast-{contrast_type}' \
-                f'_{model_permutation}_stat-tstat.nii.gz'
-    tstat_map.to_filename(tstat_out)
+    cohensd_out = f'{group_outdir}/subs-{N_maps}_ses-{session}_task-{task_type}_{level}_contrast-{contrast_type}' \
+                f'_{model_permutation}_stat-cohensd.nii.gz'
+    cohensd_map.to_filename(cohensd_out)
 
 
 parser = argparse.ArgumentParser(description="Script to run first level task models w/ nilearn")
