@@ -1,6 +1,6 @@
 #!/bin/bash -l
-#SBATCH -J first_abcd
-#SBATCH --array=14 # jobs
+#SBATCH -J first_ahrb
+#SBATCH --array=0-5 #0%20 # jobs
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=6

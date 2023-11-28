@@ -7,7 +7,7 @@ curr_dir=`pwd`
 ses=ses-SESSION
 ses_r=SESSION
 sub=SUBJECT
-n_vols=403
+n_vols=407
 tr_sec=.800
 fmriprep=fmriprep_23.1.4
 task=TASK
@@ -15,7 +15,7 @@ inp_dat=${data_dir}/derivatives/${fmriprep}
 beh_dat=${data_dir}/derivatives/taskdescribe_v1.0
 mask_path=${curr_dir}/../brain_mask/MNI152NLin2009cAsym_res-02_desc-brain_mask.nii.gz
 file_out=/scratch/groups/russpold/${USER}/analyses_reliability
-vol_info_file=${file_out}/vol_info.tsv
+summ_file=task-${task}_summ-mot-acc-rt.csv
 tmp_in=/scratch/groups/russpold/${USER}/${sample}
 firstlvl_fold=${data_dir}/derivatives/analyses/proj_reliability/firstlvl/${ses}/${sub}
 first_scratch=${file_out}/firstlvl/${ses}/${sub}
@@ -48,68 +48,10 @@ cp ${beh_dat}/${ses_r}_${task}/${sub}_${ses}_task-${task}_beh-descr.json ${tmp_i
 cp ${data_dir}/${sub}/${ses}/func/${sub}_${ses}_task-${task}_*_events.tsv ${tmp_in}/${sub}/${ses}/func/
 
 
-# trim excess vols (length for AHRB should be 403 TRs, depending on BIDS conversion was either on dicom (407) or uploaded (403)
-echo "#### Modifying runs .nii and .tsv to match target length ####"
-target_vols=403
-declare -A vols_run
-declare -A diff_vols_run
-declare -A len_conf_run
-declare -A newvols_run
-
-# Loop over the runs
-for run in $(seq 1 2); do
-	echo "Modifying Run: ${run} "
-	# Calculate vols and diff_vols
-	vols_run[$run]=$(fslinfo "${tmp_in}/${sub}/${ses}/func/${sub}_${ses}_task-${task}_run-0${run}_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz" \
-		| grep -w "dim4" \
-		| awk -F" " '{ print $2 }')
-
-	diff_vols_run[$run]=$((vols_run[$run] - target_vols))
-
-	# Output the difference	
-	echo "Difference from target 407. Run${run}: ${diff_vols_run[$run]}"
-
-	# Extract volumes using fslroi and cut fmriprep confound rows
-	fslroi "${tmp_in}/${sub}/${ses}/func/${sub}_${ses}_task-${task}_run-0${run}_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz" \
-		"${tmp_in}/${sub}/${ses}/func/${sub}_${ses}_task-${task}_run-0${run}_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz" \
-		${diff_vols_run[$run]} ${target_vols}
-
-	remove_run=$((diff_vols_run[$run] + 1))
-	sed -i "2,${remove_run}d" "${tmp_in}/${sub}/${ses}/func/${sub}_${ses}_task-${task}_run-0${run}_desc-confounds_timeseries.tsv"
-	len_conf_run[$run]=$(cat "${tmp_in}/${sub}/${ses}/func/${sub}_${ses}_task-${task}_run-0${run}_desc-confounds_timeseries.tsv" | wc -l)
-
-	# new vols calc
-	newvols_run[$run]=$(fslinfo "${tmp_in}/${sub}/${ses}/func/${sub}_${ses}_task-${task}_run-0${run}_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz" \
-                | grep -w "dim4" \
-                | awk -F" " '{ print $2 }')
-done
-
-# Output summary statistics
-echo
-echo "SUMMARY STATISTICS:"
-echo -e "run1_dim4 = ${vols_run[1]}\trun2_dim4 = ${vols_run[2]}\nrun1_vols_cut = ${diff_vols_run[1]}\trun2_vols_cut = ${diff_vols_run[2]}"
-echo -e "conf_len_run1 = ${len_conf_run[1]}\tconf_len_run2 = ${len_conf_run[2]}"
-
-# Append summary statistics to the volume info file
-echo -e "${sub}\t${vols_run[1]}\t${newvols_run[1]}\t${vols_run[2]}\t${newvols_run[2]}\t${diff_vols_run[1]}\t${diff_vols_run[2]}\t${len_conf_run[1]}\t${len_conf_run[2]}" >> ${vol_info_file}
-echo
-
-# Check if the value in ${newvols_run[1]} is less than 403
-if (( ${newvols_run[1]} < 403 )); then
-    echo "Failed, volumes below expected 403. Check data."
-# Check if the value in ${newvols_run[2]} is less than 403
-elif (( ${newvols_run[2]} < 403 )); then
-    echo "Failed, volumes below expected 403. Check data."
-else
-    echo "Values are >= 403. Proceeding..."
-fi
-
-
 # Output summary statistics check/create
-[ ! -d ${file_out} ] && echo "analyses out directory exists" | mkdir -p ${file_out}
 
-if [ ! -s ${file_out}/task-${task}_summ-mot-acc-rt.csv ] ; then
-	echo "Subject,Session,mFD_run1,mFD_run2,acc_run1,acc_run2,mrt_run1,mrt_run2" > ${file_out}/task-${task}_summ-mot-acc-rt.csv
+if [ ! -s ${tmp_in}/${sub}/${ses}/func/${summ_file} ] ; then
+	echo "Subject,Session,mFD_run1,mFD_run2,acc_run1,acc_run2,mrt_run1,mrt_run2" > ${tmp_in}/${sub}/${ses}/func/${summ_file}
 fi
 	
 python ${script_dir}/extract_values.py ${tmp_in} ${sub} ${ses_r} ${task} 
@@ -122,7 +64,7 @@ else
         exit 1
 fi
 
-cat ${tmp_in}/${sub}/${ses}/func/task-${task}_summ-mot-acc-rt.csv | tail -n 1 >> ${file_out}/task-${task}_summ-mot-acc-rt.csv
+cat ${tmp_in}/${sub}/${ses}/func/${summ_file} | tail -n 1 >> ${file_out}/${ses}_${summ_file}
 
 
 # RUN FIRST LEVELS
