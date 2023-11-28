@@ -2,8 +2,27 @@ import os
 import pandas as pd
 import numpy as np
 from nilearn.glm.first_level import make_first_level_design_matrix
+from nipype.interfaces.fsl.model import SmoothEstimate
 from glob import glob
 
+
+def smooth_estimate(zstat_path, mask_path):
+    """
+    Estimate smoothness parameters for a Z-statistic image.
+    :param zstat_path (str): Path to the Z-statistic image file.
+    :param mask_path (str): Path to the mask file to constrain the estimation.
+    :returns: tuple containing results from smooth estimate.
+        - dlh (float): Smoothness estimate sqrt(det(Lambda)) (e.g. fwhm along x)
+        - resels (float): Volume of resel, in voxels, defined as FWHM_x * FWHM_y * FWHM_z.
+        - volume (float): Volume of the mask.
+    """
+    # Create SmoothEstimate interface + set paths
+    print(f"Calculating on img: {zstat_path}")
+    est_smooth = SmoothEstimate()
+    est_smooth.inputs.zstat_file = zstat_path
+    est_smooth.inputs.mask_file = mask_path
+    # Run the SmoothEstimate operation + extract parameters
+    est_smooth.run()
 
 def eff_estimator(desmat, contrast_matrix):
     '''
