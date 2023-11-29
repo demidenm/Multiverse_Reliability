@@ -7,6 +7,7 @@ curr_dir=`pwd`
 ses=ses-SESSION
 ses_r=SESSION
 sub=SUBJECT
+stc_opt=False
 n_vols=407
 tr_sec=.800
 fmriprep=fmriprep_23.1.4
@@ -80,7 +81,7 @@ echo "analysis scratch: ${first_scratch}"
 echo "copy to first oak: ${firstlvl_fold}"
 
 
-echo "python ${script_dir}/runs_withinrun_permutations.py --sample ${sample} --stc False --sub ${sub} --task ${task} --ses ${ses_r} --numvols ${n_vols} --boldtr ${tr_sec} --beh_path ${tmp_in} --fmriprep_path ${tmp_in} --mask ${mask_path} --mask_label mni152 --output ${first_scratch}"
+echo "python ${script_dir}/runs_withinrun_permutations.py --sample ${sample} --stc ${stc_opt} --sub ${sub} --task ${task} --ses ${ses_r} --numvols ${n_vols} --boldtr ${tr_sec} --beh_path ${tmp_in} --fmriprep_path ${tmp_in} --mask ${mask_path} --mask_label mni152 --output ${first_scratch}"
 python ${script_dir}/runs_withinrun_permutations.py --sample ${sample} --stc False --sub ${sub} --task ${task} --ses ${ses_r} --numvols ${n_vols} --boldtr ${tr_sec} --beh_path ${tmp_in} --fmriprep_path ${tmp_in} --mask ${mask_path} --mask_label mni152 --output ${first_scratch}
 firstlvl_error=$?
 
@@ -115,7 +116,7 @@ fixeff_error=$?
 
 if [ ${fixeff_error} -eq 0 ]; then
         echo "Python fixed effect completed successfully!"
-	${tmp_in}/${sub}/
+	rm -r ${tmp_in}/${sub}/
 	echo "sync'ing scratch to oak dir"
 	rsync -av --remove-source-files ${file_out}/fixedeff/${ses}/${sub}/ ${fixeff_fold}
 else
