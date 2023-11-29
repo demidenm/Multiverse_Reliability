@@ -11,18 +11,23 @@ def smooth_estimate(zstat_path, mask_path):
     Estimate smoothness parameters for a Z-statistic image.
     :param zstat_path (str): Path to the Z-statistic image file.
     :param mask_path (str): Path to the mask file to constrain the estimation.
-    :returns: tuple containing results from smooth estimate.
-        - dlh (float): Smoothness estimate sqrt(det(Lambda)) (e.g. fwhm along x)
-        - resels (float): Volume of resel, in voxels, defined as FWHM_x * FWHM_y * FWHM_z.
-        - volume (float): Volume of the mask.
+    :returns: tuple containing results with DLH + X, Y, Z FWHM mm.
     """
     # Create SmoothEstimate interface + set paths
     print(f"Calculating on img: {zstat_path}")
     est_smooth = SmoothEstimate()
     est_smooth.inputs.zstat_file = zstat_path
     est_smooth.inputs.mask_file = mask_path
-    # Run the SmoothEstimate operation + extract parameters
-    est_smooth.run()
+
+    # Run the SmoothEstimate operation + extract parameters from STDout, e.g. DLH + FWHM mm
+    result = est_smooth.run()
+
+    # Extract parameters from the result object
+    dlh = float(result.runtime.stdout.split('DLH ')[1].split()[0])
+    fwhmmm = [float(value) for value in result.runtime.stdout.split('FWHMmm ')[1].split()]
+
+    return dlh, *fwhmmm
+
 
 def eff_estimator(desmat, contrast_matrix):
     '''
