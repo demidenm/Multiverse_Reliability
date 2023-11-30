@@ -1,10 +1,10 @@
 #!/bin/bash
 
 curr_dir=`pwd`
-sample=MLS # abcd, AHRB, MLS
-task=reward # mid = AHRB, reward = MLS
+sample=AHRB # abcd, AHRB, MLS
+task=mid # mid = AHRB, reward = MLS
 ses=1 # 1 or 2
-type=session # run or session
+type=ses # run or ses
 subj_list=$1 
 inpfold=/oak/stanford/groups/russpold/data/${sample}/derivatives/analyses/proj_reliability/fixedeff
 outfold=/oak/stanford/groups/russpold/data/${sample}/derivatives/analyses/proj_reliability/group
@@ -33,3 +33,7 @@ for fwhm in ${fwhm_opt[@]} ; do
 done
 
 chmod +x ./batch_jobs/group*
+
+echo
+echo "Files created. Make sure the group .py script has the correct beta/effect and session/run abbreviations"
+echo

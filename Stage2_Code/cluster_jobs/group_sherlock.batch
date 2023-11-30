@@ -9,8 +9,8 @@
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=demidenm@stanford.edu
 #SBATCH -p russpold,normal,owners
-#SBATCH -o logs_mls/%x_%A_%a.out #update for abcd/ahrb/mls
-#SBATCH -e logs_mls/%x_%A_%a.err #update for abcd/ahrb/mls
+#SBATCH -o logs_ahrb/%x_%A_%a.out #update for abcd/ahrb/mls
+#SBATCH -e logs_ahrb/%x_%A_%a.err #update for abcd/ahrb/mls
 source $HOME/miniconda3/etc/profile.d/conda.sh
 conda activate fmri_env
 
