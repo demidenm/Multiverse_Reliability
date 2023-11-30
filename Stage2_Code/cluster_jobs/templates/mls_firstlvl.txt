@@ -1,0 +1,138 @@
+#!/bin/bash
+
+# define variables
+sample=SAMPLE
+data_dir=DATA_LOC
+curr_dir=`pwd`
+ses=ses-SESSION
+ses_r=SESSION
+sub=SUBJECT
+stc_opt=True
+n_vols=150
+tr_sec=2
+fmriprep=fmriprep_23.1.4
+task=TASK
+inp_dat=${data_dir}/derivatives/${fmriprep}
+beh_dat=${data_dir}/derivatives/taskdescribe_v1.0
+mask_path=${curr_dir}/../brain_mask/MNI152NLin2009cAsym_res-02_desc-brain_mask.nii.gz
+file_out=/scratch/groups/russpold/${USER}/analyses_reliability
+summ_file=task-${task}_summ-mot-acc-rt.csv
+tmp_in=/scratch/groups/russpold/${USER}/${sample}
+firstlvl_fold=${data_dir}/derivatives/analyses/proj_reliability/firstlvl/${ses}/${sub}
+first_scratch=${file_out}/firstlvl/${ses}/${sub}
+fixeff_fold=${data_dir}/derivatives/analyses/proj_reliability/fixedeff/${ses}/${sub}
+fixed_scratch=${file_out}/fixedeff/${ses}/${sub}
+script_dir=${curr_dir}/..
+
+# Create tmp folder and pull relevant data to work with
+echo "Copying ${task} files for $sub from derivatives for fmriprep and behavior"
+
+mkdir -p ${tmp_in}/${sub}/${ses}/func/
+[ ! -d ${file_out} ] && echo "analyses out directory exists" | mkdir -p ${file_out}
+
+rsync -av --exclude='*task-word*' ${inp_dat}/${sub}/ ${tmp_in}/${sub}/ 
+
+rsync -av --exclude='*task-word*' ${inp_dat}/${sub}/ ${tmp_in}/${sub}/ 
+
+for ses_n in 1 2 3 ; do
+    if [ -s ${beh_dat}/${ses_n}_${task}/${sub}_ses-${ses_n}_task-${task}_beh-descr.json ] ; then
+        cp ${beh_dat}/${ses_n}_${task}/${sub}_ses-${ses_n}_task-${task}_beh-descr.json ${tmp_in}/${sub}/ses-${ses_n}/func/
+        cp ${data_dir}/${sub}/ses-${ses_n}/func/${sub}_ses-${ses_n}_task-${task}_*_events.tsv ${tmp_in}/${sub}/ses-${ses_n}/func/
+    else
+        echo "${beh_dat}/${ses_n}_${task}/${sub}_ses-${ses_n}_task-${task}_beh-descr.json File Error -- Doesn't exist"
+    fi
+done
+
+# renaming ses3 to ses2 and ses-2 to ses-1 if ses-1 direct doesnt exists
+ses1_path=${tmp_in}/${sub}/ses-1
+ses2_path=${tmp_in}/${sub}/ses-2
+ses3_path=${tmp_in}/${sub}/ses-3
+
+if [ -d $ses3_path ]; then
+	rm -r ${ses1_path} 
+	# If ses-3 directory exist, rename ses-2 to ses-1 and ses-3 to ses-2
+	echo "moving ses 2 to ses 1 and renaming ses-2 to ses-1"
+	mv $ses2_path $ses1_path
+	find $ses1_path -type f -name "*ses-2*" -exec bash -c 'mv "$1" "${1//ses-2/ses-1}"' _ {} \;
+        
+	echo "moving ses 3 to ses 2 and renaming ses 3 to ses 2"
+        mv $ses3_path $ses2_path
+        find $ses2_path -type f -name "*ses-3*" -exec bash -c 'mv "$1" "${1//ses-3/ses-2}"' _ {} \;
+else
+	echo "No ${ses3_path}, proceeding"
+fi
+
+# Output summary statistics check/create
+
+if [ ! -s ${tmp_in}/${sub}/${ses}/func/${summ_file} ] ; then
+	echo "Subject,Session,mFD_run1,mFD_run2,acc_run1,acc_run2,mrt_run1,mrt_run2" > ${tmp_in}/${sub}/${ses}/func/${summ_file}
+fi
+	
+python ${script_dir}/extract_values.py ${tmp_in} ${sub} ${ses_r} ${task} 
+motbeh_error=$?
+
+if [ ${motbeh_error} -eq 0 ]; then
+        echo "Python motion/behavior  completed successfully!"
+else
+    	echo "Python motion/behavior failed."
+        exit 1
+fi
+
+cat ${tmp_in}/${sub}/${ses}/func/${summ_file} | tail -n 1 >> ${file_out}/${ses}_${summ_file}
+
+
+# RUN FIRST LEVELS
+
+[ ! -d ${firstlvl_fold} ] && echo "analyses out directory exists" | mkdir -p ${firstlvl_fold} 
+[ ! -d ${first_scratch} ] && echo "analyses scratch path exists" | mkdir -p ${first_scratch}
+
+echo "#### Starting First level run GLMs ####"
+# run python script
+echo "sub: ${sub}"
+echo "data_preproc: ${inp_dat}"
+echo "analysis scratch: ${first_scratch}"
+echo "copy to first oak: ${firstlvl_fold}"
+
+
+echo "python ${script_dir}/runs_withinrun_permutations.py --sample ${sample} --stc ${stc_opt} --sub ${sub} --task ${task} --ses ${ses_r} --numvols ${n_vols} --boldtr ${tr_sec} --beh_path ${tmp_in} --fmriprep_path ${tmp_in} --mask ${mask_path} --mask_label mni152 --output ${first_scratch}"
+python ${script_dir}/runs_withinrun_permutations.py --sample ${sample} --stc False --sub ${sub} --task ${task} --ses ${ses_r} --numvols ${n_vols} --boldtr ${tr_sec} --beh_path ${tmp_in} --fmriprep_path ${tmp_in} --mask ${mask_path} --mask_label mni152 --output ${first_scratch}
+firstlvl_error=$?
+
+if [ ${firstlvl_error} -eq 0 ]; then
+	echo "Python first level completed successfully!"
+	echo "sync'ing scratch to oak dir"
+	rsync -av --remove-source-files ${file_out}/firstlvl/${ses}/${sub}/ ${firstlvl_fold}
+else
+	echo "Python first level failed."
+	exit 1
+fi
+
+echo
+echo
+echo "#### Starting Precision Weighted Fixed Effect ####" 
+
+# Define directories
+
+[ ! -d ${fixeff_fold} ] && echo "fixed out directory exists" | mkdir -p ${fixeff_fold} 
+[ ! -d ${fixed_scratch} ] && echo "analyses scratch path exists" | mkdir -p ${fixed_scratch}
+
+# run python script
+echo "sub: ${sub}"
+echo "First lvl input: ${firstlvl_fold}"
+echo "Fixed scratch out: ${fixed_scratch}"
+echo "Fixed lvl sync: ${fixeff_fold}"
+
+echo "python ${script_dir}/runs_withinsession_permutations.py --sample ${sample} --sub ${sub} --task ${task} --ses ${ses_r} --firstlvl_inp ${firstlvl_fold} --mask ${mask_path} --mask_label mni152 --output ${fixed_scratch}"
+
+python ${script_dir}/runs_withinsession_permutations.py --sample ${sample} --sub ${sub} --task ${task} --ses ${ses_r} --firstlvl_inp ${firstlvl_fold} --mask ${mask_path} --mask_label mni152 --output ${fixed_scratch}
+fixeff_error=$?
+
+if [ ${fixeff_error} -eq 0 ]; then
+        echo "Python fixed effect completed successfully!"
+	rm -r ${tmp_in}/${sub}/
+	echo "sync'ing scratch to oak dir"
+	rsync -av --remove-source-files ${file_out}/fixedeff/${ses}/${sub}/ ${fixeff_fold}
+else
+        echo "Python first effect failed."
+        exit 1
+fi

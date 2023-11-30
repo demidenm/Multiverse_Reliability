@@ -27,4 +27,7 @@ Stage2_Code/cluster_jobs/log_abcd/*
 Stage2_Code/cluster_jobs/batch_jobs/
 Stage2_Code/cluster_jobs/logs_ahrb/*
 Stage2_Code/cluster_jobs/subj_id/
+Stage2_Code/subj_id/
 Stage2_Code/.Rhistory
+Stage2_Code/cluster_jobs/first_sherlock.batch
+Stage2_Code/cluster_jobs/logs_mls/
