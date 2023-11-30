@@ -2,8 +2,8 @@
 
 subj_ids=$1
 ses=1
-sample=AHRB
-task=mid
+sample=MLS
+task=reward
 inp_path=/oak/stanford/groups/russpold/data/${sample}
 
 if [ -z "$1" ]; then
