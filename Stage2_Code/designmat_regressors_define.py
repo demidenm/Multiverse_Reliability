@@ -6,27 +6,35 @@ from nipype.interfaces.fsl.model import SmoothEstimate
 from glob import glob
 
 
-def smooth_estimate(zstat_path, mask_path):
+def smooth_estimate(img_paths, mask_path,out_path):
     """
     Estimate smoothness parameters for a Z-statistic image.
-    :param zstat_path (str): Path to the Z-statistic image file.
+    :param img_paths (str): List of paths to nii map (e.g. zstat).
     :param mask_path (str): Path to the mask file to constrain the estimation.
-    :returns: tuple containing results with DLH + X, Y, Z FWHM mm.
+    :param out_path (str): Path where to save the pandas DF w/ estimates
+    :returns: Pandas DF.
     """
     # Create SmoothEstimate interface + set paths
-    print(f"Calculating on img: {zstat_path}")
-    est_smooth = SmoothEstimate()
-    est_smooth.inputs.zstat_file = zstat_path
-    est_smooth.inputs.mask_file = mask_path
+    print(f"Calculating Smooth Estimate on {len(img_paths)} images")
+    list_est = []
+    for img in img_paths:
+        print(f"Calculating on img: {img}")
+        est_smooth = SmoothEstimate()
+        est_smooth.inputs.zstat_file = img
+        est_smooth.inputs.mask_file = mask_path
+        # Run the SmoothEstimate operation + extract parameters from STDout, e.g. DLH + FWHM mm
+        result = est_smooth.run()
+        # Extract parameters from the result object
+        dlh = float(result.runtime.stdout.split('DLH ')[1].split()[0])
+        fwhmmm = [float(value) for value in result.runtime.stdout.split('FWHMmm ')[1].split()]
+        list_est.append({'DLH': dlh,
+                             'FWHM_X': fwhmmm[0],
+                             'FWHM_Y': fwhmmm[1],
+                             'FWHM_Z': fwhmmm[2]})
+    df = pd.DataFrame(list_est)
+    df.to_csv(f'{out_path}/SmoothEstimates.csv', index=False)
+    return df
 
-    # Run the SmoothEstimate operation + extract parameters from STDout, e.g. DLH + FWHM mm
-    result = est_smooth.run()
-
-    # Extract parameters from the result object
-    dlh = float(result.runtime.stdout.split('DLH ')[1].split()[0])
-    fwhmmm = [float(value) for value in result.runtime.stdout.split('FWHMmm ')[1].split()]
-
-    return dlh, *fwhmmm
 
 
 def eff_estimator(desmat, contrast_matrix):
