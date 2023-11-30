@@ -6,7 +6,7 @@ from nipype.interfaces.fsl.model import SmoothEstimate
 from glob import glob
 
 
-def smooth_estimate(img_paths, mask_path,out_path):
+def smooth_estimate(img_paths, mask_path, out_path):
     """
     Estimate smoothness parameters for a Z-statistic image.
     :param img_paths (str): List of paths to nii map (e.g. zstat).
@@ -22,19 +22,17 @@ def smooth_estimate(img_paths, mask_path,out_path):
         est_smooth = SmoothEstimate()
         est_smooth.inputs.zstat_file = img
         est_smooth.inputs.mask_file = mask_path
-        # Run the SmoothEstimate operation + extract parameters from STDout, e.g. DLH + FWHM mm
+        # Run the SmoothEstimate operation + extract parameters from STDout, e.g. DLH + resels
+        # Based on https://www.jiscmail.ac.uk/cgi-bin/webadmin?A2=FSL;e792b5da.0803, avg FWHM = resel^(1/3)
         result = est_smooth.run()
         # Extract parameters from the result object
-        dlh = float(result.runtime.stdout.split('DLH ')[1].split()[0])
-        fwhmmm = [float(value) for value in result.runtime.stdout.split('FWHMmm ')[1].split()]
+        dlh = result.outputs.dlh
+        resel = result.outputs.resels
         list_est.append({'DLH': dlh,
-                             'FWHM_X': fwhmmm[0],
-                             'FWHM_Y': fwhmmm[1],
-                             'FWHM_Z': fwhmmm[2]})
+                        'RESEL':resel})
     df = pd.DataFrame(list_est)
     df.to_csv(f'{out_path}/SmoothEstimates.csv', index=False)
     return df
-
 
 
 def eff_estimator(desmat, contrast_matrix):

@@ -56,7 +56,7 @@ def group_onesample(fixedeffect_paths: list, session: str, task_type: str,
                                  columns=['Intercept'])
 
     # Fit secondlevel model
-    sec_lvl_model = SecondLevelModel(mask_img=mask, smoothing_fwhm=None)
+    sec_lvl_model = SecondLevelModel(mask_img=mask, smoothing_fwhm=None,minimize_memory=False)
     sec_lvl_model = sec_lvl_model.fit(second_level_input=fixedeffect_paths,
                                       design_matrix=design_matrix)
 
@@ -64,8 +64,16 @@ def group_onesample(fixedeffect_paths: list, session: str, task_type: str,
     tstat_map = sec_lvl_model.compute_contrast(
         second_level_contrast='Intercept',
         second_level_stat_type='t',
-        output_type='stat',
+        output_type='stat'
     )
+
+    # calculate residuals for group map
+    residuals_grp = sec_lvl_model.residuals
+    residual_out = f'{group_outdir}/subs-{N_maps}_ses-{session}_task-{task_type}_{level}_contrast-{contrast_type}' \
+                  f'_{model_permutation}_stat-residuals.nii.gz'
+    residuals_grp.to_filename(residual_out)
+
+    # calc cohens d
     cohensd_map = nifti_tstat_to_cohensd(tstat_map, N_maps)
     # group out file, naming subs-N
     cohensd_out = f'{group_outdir}/subs-{N_maps}_ses-{session}_task-{task_type}_{level}_contrast-{contrast_type}' \

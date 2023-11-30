@@ -100,14 +100,13 @@ if sample in ['abcd', 'AHRB']:
     opts = np.array([1.5,  2, 2.5, 3, 3.5])
     fwhm_opt = list(np.round(voxel * opts, 1))
 elif sample in 'MLS':
-    voxel = 2.4
+    voxel = 4
     inh_smooth_weight = .60
-    opts = np.array([1.5, 2, 2.5, 3, 3.5])*inh_smooth_weight
+    opts = np.array([1.5])*inh_smooth_weight#, 2, 2.5, 3, 3.5])*inh_smooth_weight
     fwhm_opt = list(np.round(voxel * opts, 1))
 
-motion_opt = ["opt1", "opt2", "opt3", "opt4"]
-# only including 4; opt 5 is opt3 + subj mFD < .9 & opt6 is opt4 + subj mFD < .9
-modtype_opt = ["CueMod", "AntMod", "FixMod"]
+motion_opt = ["opt3"]#["opt1", "opt2", "opt3", "opt4"]
+modtype_opt = ["CueMod"]#, "AntMod", "FixMod"]
 
 permutation_list = list(product(fwhm_opt, motion_opt, modtype_opt))
 
