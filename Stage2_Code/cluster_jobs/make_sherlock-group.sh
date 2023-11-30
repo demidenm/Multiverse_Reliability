@@ -1,0 +1,35 @@
+#!/bin/bash
+
+curr_dir=`pwd`
+sample=MLS # abcd, AHRB, MLS
+task=reward # mid = AHRB, reward = MLS
+ses=1 # 1 or 2
+type=session # run or session
+subj_list=$1 
+inpfold=/oak/stanford/groups/russpold/data/${sample}/derivatives/analyses/proj_reliability/fixedeff
+outfold=/oak/stanford/groups/russpold/data/${sample}/derivatives/analyses/proj_reliability/group
+
+
+# Model permutations
+if [[ $sample == 'abcd' || $sample == 'AHRB' ]]; then
+    fwhm_opt=(3.6) # 4.8 6.0 7.2 8.4
+elif [[ $sample == 'MLS' ]]; then
+    fwhm_opt=(3.6) # 4.8 6.0 7.2 8.4
+fi
+
+motion_opt=("opt3") # "opt1" "opt2" "opt3" "opt4" "opt5"
+modtype_opt=("CueMod") # "AntMod" "FixMod"
+
+# Start loop to create ICC batch jobs
+n=0
+for fwhm in ${fwhm_opt[@]} ; do
+	for motion in ${motion_opt[@]} ; do
+		for modtype in ${modtype_opt[@]} ; do
+			model="mask-mni152_mot-${motion}_mod-${modtype}_fwhm-${fwhm}"
+			sed -e "s|MODEL|${model}|g; s|SESSION|${ses}|g; s|TASK|${task}|g; s|TYPE|${type}|g;  s|INPUT|${inpfold}|g; s|OUTPUT|${outfold}|g; s|SUBJ_IDS|${subj_list}|g; s|SAMPLE|${sample}|g;" ./templates/group_sherlock.txt > ./batch_jobs/group${n}
+        		n=$((n+1))
+	        done
+    	done
+done
+
+chmod +x ./batch_jobs/group*
