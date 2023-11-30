@@ -151,7 +151,7 @@ for run in runs:
         print('\t\t 2/5 Create Regressors & Design Matrix for GLM')
         # get list of regressors
         # run to create design matrix
-        conf_regressors = pull_regressors(confound_path=conf_path, regressor_type=motion)
+        conf_regressors = pull_regressors(confound_path=conf_path, regressor_type=motion, sample=sample)
         design_matrix = create_design_mid(events_df=events_df, bold_tr=boldtr, num_volumes=numvols,
                                           onset_label=model_types[model][0],
                                           duration_label=model_types[model][1],

@@ -54,7 +54,7 @@ def eff_estimator(desmat, contrast_matrix):
     return 1/var_vec
 
 
-def pull_regressors(confound_path: str, regressor_type: str = 'opt1') -> pd.DataFrame:
+def pull_regressors(confound_path: str, regressor_type: str = 'opt1', sample: str = None) -> pd.DataFrame:
     """
     This function is compatible with the *confounds_timeseries.tsv file exported by fMRIprep
     When calling this function, provide the path to the confounds file for each subject (and run) and select
@@ -68,6 +68,7 @@ def pull_regressors(confound_path: str, regressor_type: str = 'opt1') -> pd.Data
         'opt3': opt2 + trans x, y, z and rot x, y, z derivatives
         'opt4': opt3 + a_comp_cor 0:7 (top 8 components)
         'opt5': opt4 + motion outliers in confounds file
+    :param sample: str, if the fmriprep cosine estimate len differs
     :return: list of confound regressors
     """
     if not os.path.exists(confound_path):
@@ -110,6 +111,10 @@ def pull_regressors(confound_path: str, regressor_type: str = 'opt1') -> pd.Data
         motion_outlier_columns = confound_df.filter(regex='motion_outlier')
         # append the motion outlier columns to in dict to opt3  as opt5
         confound_dict['opt4'] = confound_dict['opt3'] + list(motion_outlier_columns.columns)
+
+    if sample == "MLS":
+        # Exclude 'cosine03' for sample "MLS", fmriprep does not generate this length
+        confound_dict[regressor_type].remove('cosine03')
 
     return pd.DataFrame(confound_df[confound_dict[regressor_type]])
 
