@@ -111,7 +111,7 @@ if sample in ['abcd', 'AHRB']:
 elif sample in 'MLS':
     voxel = 4
     inh_smooth_weight = .50
-    opts = np.array([3, 4, 5, 6, 7])*inh_smooth_weight
+    opts = np.array([1.5, 2, 2.5, 3, 3.5])*inh_smooth_weight
     fwhm_opt = list(np.round(voxel * opts, 1))
 
 motion_opt = ["opt1", "opt2", "opt3", "opt4"]
