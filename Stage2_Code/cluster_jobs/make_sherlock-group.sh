@@ -1,8 +1,8 @@
 #!/bin/bash
 
 curr_dir=`pwd`
-sample=AHRB # abcd, AHRB, MLS
-task=mid # mid = AHRB, reward = MLS
+sample=MLS # abcd, AHRB, MLS
+task=reward # mid = AHRB, reward = MLS
 ses=1 # 1 or 2
 type=ses # run or ses
 subj_list=$1 
