@@ -4,7 +4,7 @@ script_dir=${curr_dir}/..
 sample=SAMPLE
 task=TASK
 ses=SESSION
-type=TYPE
+type=TYPE-${ses}
 model=MODEL
 sub_list=SUBJ_IDS
 mask=${curr_dir}/../brain_mask/MNI152NLin2009cAsym_res-02_desc-brain_mask.nii.gz
@@ -31,7 +31,7 @@ echo "Fixed lvl input: ${tmp_dir}"
 echo "Group scratch out: ${group_scratch}"
 echo "Group oak out: ${group_out}"
 
-python ${script_dir}/group_withinsession_permutations.py --sample ${sample} --task ${task} --ses ${ses} --type ${type}-${ses} --mask ${mask} --mask_label mni-152 --model ${model} --input ${tmp_dir}/inp --output ${group_scratch}
+python ${script_dir}/group_withinsession_permutations.py --sample ${sample} --task ${task} --ses ${ses} --type ${type} --mask ${mask} --mask_label mni-152 --model ${model} --input ${tmp_dir}/inp --output ${group_scratch}
 grp_error=$?
 
 if [ ${grp_error} -eq 0 ]; then
