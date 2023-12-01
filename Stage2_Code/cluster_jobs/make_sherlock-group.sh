@@ -12,13 +12,13 @@ outfold=/oak/stanford/groups/russpold/data/${sample}/derivatives/analyses/proj_r
 
 # Model permutations
 if [[ $sample == 'abcd' || $sample == 'AHRB' ]]; then
-    fwhm_opt=(3.6) # 4.8 6.0 7.2 8.4
+    fwhm_opt=(3.6 4.8 6.0 7.2 8.4)
 elif [[ $sample == 'MLS' ]]; then
-    fwhm_opt=(3.6) # 4.8 6.0 7.2 8.4
+    fwhm_opt=(3.0 4.0 5.0 6.0 7.0)
 fi
 
-motion_opt=("opt3") # "opt1" "opt2" "opt3" "opt4" "opt5"
-modtype_opt=("CueMod") # "AntMod" "FixMod"
+motion_opt=("opt1" "opt2" "opt3" "opt4" "opt5")
+modtype_opt=("CueMod" "AntMod" "FixMod")
 
 # Start loop to create ICC batch jobs
 n=0
