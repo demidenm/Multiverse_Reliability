@@ -12,7 +12,7 @@ def smooth_estimate(img_paths, mask_path, out_path):
     :param img_paths (str): List of paths to nii map (e.g. zstat).
     :param mask_path (str): Path to the mask file to constrain the estimation.
     :param out_path (str): Path where to save the pandas DF w/ estimates
-    :returns: Pandas DF.
+    :returns: Pandas DF w/ img path, DLH and RESEL estimate.
     """
     # Create SmoothEstimate interface + set paths
     print(f"Calculating Smooth Estimate on {len(img_paths)} images")
@@ -28,7 +28,8 @@ def smooth_estimate(img_paths, mask_path, out_path):
         # Extract parameters from the result object
         dlh = result.outputs.dlh
         resel = result.outputs.resels
-        list_est.append({'DLH': dlh,
+        list_est.append({'path': img,
+                        'DLH': dlh,
                         'RESEL':resel})
     df = pd.DataFrame(list_est)
     df.to_csv(f'{out_path}/SmoothEstimates.csv', index=False)
