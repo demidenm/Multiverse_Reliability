@@ -7,7 +7,7 @@ mask_label=wilson-supra # wilson-sub, wilson-supra
 type=session # run or session
 inpfold=/oak/stanford/groups/russpold/data/${sample}/derivatives/analyses/proj_reliability/fixedeff
 outfold=/oak/stanford/groups/russpold/data/${sample}/derivatives/analyses/proj_reliability/icc_mods
-scratch=/scratch/groups/russpold/${demidenm}/${sample}
+scratch=/scratch/groups/russpold/${USER}/${sample}
 
 # Model permutations
 if [[ $sample == 'abcd' || $sample == 'AHRB' ]]; then
@@ -32,7 +32,7 @@ for con in ${contrasts[@]} ; do
         for motion in ${motion_opt[@]} ; do
             for modtype in ${modtype_opt[@]} ; do
                 model="contrast-${con}_mask-mni152_mot-${motion}_mod-${modtype}_fwhm-${fwhm}"
-		sed -e "s|MODEL|${model}|g; s|SAMPLE|${sample}|g; s|SESSION|${ses}|g; s|MASKLABEL|${mask_label}|g; s|TYPE|${type}|g;  s|INPFOLD|${inpfold}|g; s|OUTFOLD|${outfold}|g; s|SCRATCH|${scratch}|g;" ./templates/icc_sherlock.txt > ./batch_jobs/icc${n}
+		sed -e "s|MODEL|${model}|g; s|TASK|${task}|g; s|SAMPLE|${sample}|g; s|SESSION|${ses}|g; s|MASKLABEL|${mask_label}|g; s|TYPE|${type}|g;  s|INPFOLD|${inpfold}|g; s|OUTFOLD|${outfold}|g; s|SCRATCH|${scratch}|g;" ./templates/icc_sherlock.txt > ./batch_jobs/icc${n}
         	n=$((n+1))
             done
         done

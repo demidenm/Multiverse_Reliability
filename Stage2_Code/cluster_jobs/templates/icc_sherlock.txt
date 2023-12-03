@@ -30,7 +30,7 @@ echo "Inp: ${inp_fold}"
 echo "Out: ${out_fold}"
 echo "Scratch: ${scratch}"
 
-python ${script_dir}/compute_icc_permutations.py --sample ${sample} --ses ${ses} --type ${type} --model ${model} --mask ${mask_path} --mask_label ${mask_label} --inp_path ${inp_fold} --output ${scratch}
+python ${script_dir}/compute_icc_permutations.py --sample ${sample} --ses ${ses} --task ${task} --type ${type} --model ${model} --mask ${mask_path} --mask_label ${mask_label} --inp_path ${inp_fold} --output ${scratch}
 icc_error=$?
 
 if [ ${icc_error} -eq 0 ]; then

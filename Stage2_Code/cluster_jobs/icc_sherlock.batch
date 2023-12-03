@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #SBATCH -J icc_ahrb
-#SBATCH --array=0 # jobs
+#SBATCH --array=0-239%20 # jobs
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=6
