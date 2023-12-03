@@ -60,7 +60,6 @@ if not os.path.exists(mask):
             output_path = f'{mask_dir}/MNI152_wilson-{thresh}.nii.gz'
             nib.save(thresh_mask_img, output_path)
 
-
 if 'run' == type:
     set1 = sorted(glob(f'{inp_path}/ses-{ses}/**/*_ses-{ses}_task-{task}_run-01_{model}_stat-beta.nii.gz'))
     set2 = sorted(glob(f'{inp_path}/ses-{ses}/**/*_ses-{ses}_task-{task}_run-02_{model}_stat-beta.nii.gz'))
@@ -69,9 +68,8 @@ if 'run' == type:
     match_string_position = all(
         a.split('_')[1:3] == b.split('_')[1:3] and a.split('_')[5:] == b.split('_')[5:] for a, b in zip(set1, set2))
     assert match_string_position, "Values at path-positions 2:3 and 5: do not match."
-
 elif 'session' == type:
-    session_list = os.listdir()
+    session_list = os.listdir(inp_path)
     set1 = sorted(glob(f'{inp_path}/{session_list[0]}/**/*_{session_list[0]}_task-{task}_{model}_stat-effect.nii.gz'))
     set2 = sorted(glob(f'{inp_path}/{session_list[1]}/**/*_{session_list[1]}_task-{task}_{model}_stat-effect.nii.gz'))
     assert len(set1) == len(set2), f'Lengths of set1 [{len(set1)}] and set2 [{len(set2)}] are not equal.'
