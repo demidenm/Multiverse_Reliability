@@ -13,6 +13,7 @@ parser.add_argument("--sample", help="sample type, ahrb, abcd or mls?")
 parser.add_argument("--ses", help="session, include the session type without prefix, e.g., 1, 01, baselinearm1")
 parser.add_argument("--type", help="between runs or sessions, e.g., run, session")
 parser.add_argument("--model", help="model permutation, e.g. contrast-Sgain-Neut_mask-mni152_mot-opt5_mod-FixMod_fwhm-6.0")
+parser.add_argument("--task", help="task mid, MID, or reward")
 parser.add_argument("--mask", help="path the to a binarized brain mask (e.g., MNI152 or "
                                    "constrained mask in MNI space, spec-network, or None")
 parser.add_argument("--mask_label", help="label for mask, e.g. mni152, wilson-supra, wilson-sub, yeo-network, or None")
@@ -24,6 +25,7 @@ args = parser.parse_args()
 sample = args.sample
 ses = args.ses
 model = args.model
+task = args.task
 type = args.type
 mask = args.mask
 mask_label = args.mask_label
@@ -60,8 +62,8 @@ if not os.path.exists(mask):
 
 
 if 'run' == type:
-    set1 = sorted(glob(f'{inp_path}/ses-{ses}/**/*_ses-{ses}_task-MID_run-01_{model}_stat-beta.nii.gz'))
-    set2 = sorted(glob(f'{inp_path}/ses-{ses}/**/*_ses-{ses}_task-MID_run-02_{model}_stat-beta.nii.gz'))
+    set1 = sorted(glob(f'{inp_path}/ses-{ses}/**/*_ses-{ses}_task-{task}_run-01_{model}_stat-beta.nii.gz'))
+    set2 = sorted(glob(f'{inp_path}/ses-{ses}/**/*_ses-{ses}_task-{task}_run-02_{model}_stat-beta.nii.gz'))
     assert len(set1) > 0 and len(set2) > 0, f'Length of set1 [{len(set1)}] and/or set2 [{len(set2)}] is zero.'
     assert len(set1) == len(set2), f'Lengths of set1 [{len(set1)}] and set2 [{len(set2)}] are not equal.'
     match_string_position = all(
@@ -70,8 +72,8 @@ if 'run' == type:
 
 elif 'session' == type:
     session_list = os.listdir()
-    set1 = sorted(glob(f'{inp_path}/{session_list[0]}/**/*_{session_list[0]}_task-MID_{model}_stat-effect.nii.gz'))
-    set2 = sorted(glob(f'{inp_path}/{session_list[1]}/**/*_{session_list[1]}_task-MID_{model}_stat-effect.nii.gz'))
+    set1 = sorted(glob(f'{inp_path}/{session_list[0]}/**/*_{session_list[0]}_task-{task}_{model}_stat-effect.nii.gz'))
+    set2 = sorted(glob(f'{inp_path}/{session_list[1]}/**/*_{session_list[1]}_task-{task}_{model}_stat-effect.nii.gz'))
     assert len(set1) == len(set2), f'Lengths of set1 [{len(set1)}] and set2 [{len(set2)}] are not equal.'
 else:
     print("incorrect reliability type provided. Options run and session")
