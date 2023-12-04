@@ -17,11 +17,17 @@ group_out=${group_dir}/ses-${ses}/${type}
 
 [ ! -d ${group_scratch} ] && echo "group scratch directory exists" | mkdir -p ${group_scratch}
 [ ! -d ${group_out} ] && echo "group out directory exists" | mkdir -p ${group_out}
+[ ! -d ${tmp_dir}/inp ] && echo "group out directory exists" | mkdir -p ${tmp_dir}/inp/
 
 # cp subjs to tmpdir
 cat ${sub_list} | while read line ; do 
-	[ ! -d ${tmp_dir}/inp ] && echo "group out directory exists" | mkdir -p ${tmp_dir}/inp/
-	cp -r ${fixed_in}/ses-${ses}/${line}/${line}_ses-${ses}_task-${task}_*_${model}_stat-effect.nii.gz ${tmp_dir}/inp/
+	if [ ${type} == 'session' ]; then
+		cp -r ${fixed_in}/ses-${ses}/${line}/${line}_ses-${ses}_task-${task}_*_${model}_stat-effect.nii.gz ${tmp_dir}/inp/
+	elif [ ${type} == 'run' ]; then
+		cp -r ${fixed_in}/ses-${ses}/${line}/${line}_ses-${ses}_task-${task}_run-0${run}*_${model}_stat-beta.nii.gz ${tmp_dir}/inp/
+	else
+		echo "Invalid type: $type"
+	fi
 done 
 
 # run python script
