@@ -107,7 +107,7 @@ grptype = args.type
 brainmask = args.mask
 mask_label = args.mask_label
 model = args.model
-fix_dir = args.input
+in_dir = args.input
 scratch_out = args.output
 
 # contrasts
@@ -118,17 +118,17 @@ contrasts = [
 
 for contrast in contrasts:
     print(f'\t Working on contrast map: {contrast}')
-    if 'run' == type:
+    if 'run' == grptype:
         # find all contrast fixed effect maps for model permutation across subjects
-        list_maps = sorted(glob(f'{fix_dir}/*_ses-{ses}_task-{task}'
+        list_maps = sorted(glob(f'{in_dir}/*_ses-{ses}_task-{task}'
                                 f'_run-0{run}_{model}_stat-beta.nii.gz'))
         group_onesample(fixedeffect_paths=list_maps, session=ses, task_type=task,
                         contrast_type=contrast, group_outdir=scratch_out,
                         model_permutation=model, mask=brainmask, level=grptype)
 
-    elif 'session' == type:
+    elif 'session' == grptype:
         # find all contrast fixed effect maps for model permutation across subjects
-        list_maps = sorted(glob(f'{fix_dir}/*_ses-{ses}_task-{task}_*'
+        list_maps = sorted(glob(f'{in_dir}/*_ses-{ses}_task-{task}_*'
                                 f'contrast-{contrast}_{model}_stat-effect.nii.gz'))
         group_onesample(fixedeffect_paths=list_maps, session=ses, task_type=task,
                         contrast_type=contrast, group_outdir=scratch_out,
