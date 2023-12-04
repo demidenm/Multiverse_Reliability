@@ -87,7 +87,7 @@ parser.add_argument("--sample", help="sample type, ahrb, abcd or mls?")
 parser.add_argument("--task", help="task type -- e.g., mid, reward, etc")
 parser.add_argument("--run", help="Run lvl -- e.g., 1 or 2 (for 01 / 02)")
 parser.add_argument("--ses", help="session, include the session type without prefix 'ses', e.g., 1, 01, baselinearm1")
-parser.add_argument("--type", help="type of group -- run-01 or session-baselinearm1")
+parser.add_argument("--type", help="type of group -- run or session")
 parser.add_argument("--model", help="model permutation,"
                                     " e.g. contrast-Sgain-Neut_mask-mni152_mot-opt5_mod-FixMod_fwhm-6.0")
 parser.add_argument("--mask", help="path the to the binarized brain mask (e.g., MNI152 or "
@@ -121,7 +121,7 @@ for contrast in contrasts:
     if 'run' == grptype:
         # find all contrast fixed effect maps for model permutation across subjects
         list_maps = sorted(glob(f'{in_dir}/*_ses-{ses}_task-{task}'
-                                f'_run-0{run}_{model}_stat-beta.nii.gz'))
+                                f'_run-0{run}_contrast-{contrast}_{model}_stat-beta.nii.gz'))
         group_onesample(fixedeffect_paths=list_maps, session=ses, task_type=task,
                         contrast_type=contrast, group_outdir=scratch_out,
                         model_permutation=model, mask=brainmask, level=grptype)
