@@ -4,10 +4,18 @@ sample=AHRB # abcd, AHRB, MLS
 task=mid # mid = AHRB, reward = MLS
 ses=1 # 1 or 2
 mask_label=wilson-supra # wilson-sub, wilson-supra
-type=session # run or session
-inpfold=/oak/stanford/groups/russpold/data/${sample}/derivatives/analyses/proj_reliability/fixedeff
+type=run # run or session
 outfold=/oak/stanford/groups/russpold/data/${sample}/derivatives/analyses/proj_reliability/icc_mods
 scratch=/scratch/groups/russpold/${USER}/${sample}
+
+# if using runs, inp should be firstlvl; if using sessions, inp should be fixedeff
+if [ ${type} == 'session' ]; then
+	inpfold=/oak/stanford/groups/russpold/data/${sample}/derivatives/analyses/proj_reliability/fixedeff
+elif [ ${type} == 'run' ]; then
+	inpfold=/oak/stanford/groups/russpold/data/${sample}/derivatives/analyses/proj_reliability/firstlvl
+else
+         	echo "Invalid type: $type"
+fi
 
 # Model permutations
 if [[ $sample == 'abcd' || $sample == 'AHRB' ]]; then

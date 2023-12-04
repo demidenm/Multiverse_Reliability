@@ -1,16 +1,22 @@
 #!/bin/bash
 
 curr_dir=`pwd`
-sample=MLS # abcd, AHRB, MLS
-task=reward # mid = AHRB, reward = MLS
+sample=AHRB # abcd, AHRB, MLS
+task=mid # mid = AHRB, reward = MLS
 run=1 # 1, 2 or None (no need for leading 0, added in code
 ses=1 # 1 or 2
 type=run # run or session
 subj_list=$1 
-# if using runs, inp should be firstlvl; if using sessions, inp should be fixedeff
-inpfold=/oak/stanford/groups/russpold/data/${sample}/derivatives/analyses/proj_reliability/firstlvl
 outfold=/oak/stanford/groups/russpold/data/${sample}/derivatives/analyses/proj_reliability/group
 
+# if using runs, inp should be firstlvl; if using sessions, inp should be fixedeff
+if [ ${type} == 'session' ]; then
+        inpfold=/oak/stanford/groups/russpold/data/${sample}/derivatives/analyses/proj_reliability/fixedeff
+elif [ ${type} == 'run' ]; then
+        inpfold=/oak/stanford/groups/russpold/data/${sample}/derivatives/analyses/proj_reliability/firstlvl
+else
+                echo "Invalid type: $type"
+fi
 
 # Model permutations
 if [[ $sample == 'abcd' || $sample == 'AHRB' ]]; then
