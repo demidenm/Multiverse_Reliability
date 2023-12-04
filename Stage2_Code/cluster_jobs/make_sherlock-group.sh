@@ -5,9 +5,10 @@ sample=MLS # abcd, AHRB, MLS
 task=reward # mid = AHRB, reward = MLS
 run=1 # 1, 2 or None (no need for leading 0, added in code
 ses=1 # 1 or 2
-type=ses # run or ses
+type=run # run or session
 subj_list=$1 
-inpfold=/oak/stanford/groups/russpold/data/${sample}/derivatives/analyses/proj_reliability/fixedeff
+# if using runs, inp should be firstlvl; if using sessions, inp should be fixedeff
+inpfold=/oak/stanford/groups/russpold/data/${sample}/derivatives/analyses/proj_reliability/firstlvl
 outfold=/oak/stanford/groups/russpold/data/${sample}/derivatives/analyses/proj_reliability/group
 
 
@@ -27,7 +28,7 @@ for fwhm in ${fwhm_opt[@]} ; do
 	for motion in ${motion_opt[@]} ; do
 		for modtype in ${modtype_opt[@]} ; do
 			model="mask-mni152_mot-${motion}_mod-${modtype}_fwhm-${fwhm}"
-			sed -e "s|MODEL|${model}|g; s|SESSION|${ses}|g; a|RUN|${run}|g; s|TASK|${task}|g; s|TYPE|${type}|g;  s|INPUT|${inpfold}|g; s|OUTPUT|${outfold}|g; s|SUBJ_IDS|${subj_list}|g; s|SAMPLE|${sample}|g;" ./templates/group_sherlock.txt > ./batch_jobs/group${n}
+			sed -e "s|MODEL|${model}|g; s|SESSION|${ses}|g; s|RUN|${run}|g; s|TASK|${task}|g; s|TYPE|${type}|g;  s|INPUT|${inpfold}|g; s|OUTPUT|${outfold}|g; s|SUBJ_IDS|${subj_list}|g; s|SAMPLE|${sample}|g;" ./templates/group_sherlock.txt > ./batch_jobs/group${n}
         		n=$((n+1))
 	        done
     	done
