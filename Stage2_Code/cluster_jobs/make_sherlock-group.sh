@@ -3,6 +3,7 @@
 curr_dir=`pwd`
 sample=MLS # abcd, AHRB, MLS
 task=reward # mid = AHRB, reward = MLS
+run=1 # 1, 2 or None (no need for leading 0, added in code
 ses=1 # 1 or 2
 type=ses # run or ses
 subj_list=$1 
@@ -17,7 +18,7 @@ elif [[ $sample == 'MLS' ]]; then
     fwhm_opt=(3.0 4.0 5.0 6.0 7.0)
 fi
 
-motion_opt=("opt1" "opt2" "opt3" "opt4" "opt5")
+motion_opt=("opt1" "opt2" "opt3" "opt4") # "opt5"/"opt6" is opt3/opt4 w/ mFD < .90
 modtype_opt=("CueMod" "AntMod" "FixMod")
 
 # Start loop to create ICC batch jobs
@@ -26,7 +27,7 @@ for fwhm in ${fwhm_opt[@]} ; do
 	for motion in ${motion_opt[@]} ; do
 		for modtype in ${modtype_opt[@]} ; do
 			model="mask-mni152_mot-${motion}_mod-${modtype}_fwhm-${fwhm}"
-			sed -e "s|MODEL|${model}|g; s|SESSION|${ses}|g; s|TASK|${task}|g; s|TYPE|${type}|g;  s|INPUT|${inpfold}|g; s|OUTPUT|${outfold}|g; s|SUBJ_IDS|${subj_list}|g; s|SAMPLE|${sample}|g;" ./templates/group_sherlock.txt > ./batch_jobs/group${n}
+			sed -e "s|MODEL|${model}|g; s|SESSION|${ses}|g; a|RUN|${run}|g; s|TASK|${task}|g; s|TYPE|${type}|g;  s|INPUT|${inpfold}|g; s|OUTPUT|${outfold}|g; s|SUBJ_IDS|${subj_list}|g; s|SAMPLE|${sample}|g;" ./templates/group_sherlock.txt > ./batch_jobs/group${n}
         		n=$((n+1))
 	        done
     	done

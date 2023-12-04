@@ -3,6 +3,7 @@ curr_dir=`pwd`
 script_dir=${curr_dir}/..
 sample=SAMPLE
 task=TASK
+run=RUN
 ses=SESSION
 type=TYPE-${ses}
 model=MODEL
@@ -11,8 +12,8 @@ mask=${curr_dir}/../brain_mask/MNI152NLin2009cAsym_res-02_desc-brain_mask.nii.gz
 fixed_in=INPUT
 group_dir=OUTPUT
 tmp_dir=/scratch/groups/russpold/${USER}/${sample}
-group_scratch=${tmp_dir}/${type}
-group_out=${group_dir}/${type}
+group_scratch=${tmp_dir}/group/${type}/${model}
+group_out=${group_dir}/ses-${ses}/${type}
 
 [ ! -d ${group_scratch} ] && echo "group scratch directory exists" | mkdir -p ${group_scratch}
 [ ! -d ${group_out} ] && echo "group out directory exists" | mkdir -p ${group_out}
@@ -31,7 +32,7 @@ echo "Fixed lvl input: ${tmp_dir}"
 echo "Group scratch out: ${group_scratch}"
 echo "Group oak out: ${group_out}"
 
-python ${script_dir}/group_withinsession_permutations.py --sample ${sample} --task ${task} --ses ${ses} --type ${type} --mask ${mask} --mask_label mni-152 --model ${model} --input ${tmp_dir}/inp --output ${group_scratch}
+python ${script_dir}/group_withinsession_permutations.py --sample ${sample} --task ${task} --run ${run} --ses ${ses} --type ${type} --mask ${mask} --mask_label mni-152 --model ${model} --input ${tmp_dir}/inp --output ${group_scratch}
 grp_error=$?
 
 if [ ${grp_error} -eq 0 ]; then
