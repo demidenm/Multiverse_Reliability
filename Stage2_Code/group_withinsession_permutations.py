@@ -4,9 +4,10 @@ import argparse
 import pandas as pd
 import numpy as np
 from glob import glob
-from nilearn.image import load_img, new_img_like
+from nilearn.image import new_img_like
 from nilearn.glm.second_level import SecondLevelModel
 warnings.filterwarnings("ignore")
+
 
 def nifti_tstat_to_cohensd(tstat_img, n):
     """
@@ -56,7 +57,7 @@ def group_onesample(fixedeffect_paths: list, session: str, task_type: str,
                                  columns=['Intercept'])
 
     # Fit secondlevel model
-    sec_lvl_model = SecondLevelModel(mask_img=mask, smoothing_fwhm=None,minimize_memory=False)
+    sec_lvl_model = SecondLevelModel(mask_img=mask, smoothing_fwhm=None, minimize_memory=False)
     sec_lvl_model = sec_lvl_model.fit(second_level_input=fixedeffect_paths,
                                       design_matrix=design_matrix)
 
@@ -69,22 +70,23 @@ def group_onesample(fixedeffect_paths: list, session: str, task_type: str,
 
     # calculate residuals for group map
     residuals_grp = sec_lvl_model.residuals
-    residual_out = f'{group_outdir}/subs-{N_maps}_ses-{session}_task-{task_type}_{level}_contrast-{contrast_type}' \
-                  f'_{model_permutation}_stat-residuals.nii.gz'
+    residual_out = f'{group_outdir}/subs-{N_maps}_ses-{session}_task-{task_type}_type-{level}_' \
+                   f'contrast-{contrast_type}_{model_permutation}_stat-residuals.nii.gz'
     residuals_grp.to_filename(residual_out)
 
     # calc cohens d
     cohensd_map = nifti_tstat_to_cohensd(tstat_map, N_maps)
     # group out file, naming subs-N
-    cohensd_out = f'{group_outdir}/subs-{N_maps}_ses-{session}_task-{task_type}_{level}_contrast-{contrast_type}' \
-                f'_{model_permutation}_stat-cohensd.nii.gz'
+    cohensd_out = f'{group_outdir}/subs-{N_maps}_ses-{session}_task-{task_type}_type-{level}_contrast-{contrast_type}' \
+                  f'_{model_permutation}_stat-cohensd.nii.gz'
     cohensd_map.to_filename(cohensd_out)
 
 
 parser = argparse.ArgumentParser(description="Script to run first level task models w/ nilearn")
 parser.add_argument("--sample", help="sample type, ahrb, abcd or mls?")
 parser.add_argument("--task", help="task type -- e.g., mid, reward, etc")
-parser.add_argument("--ses", help="session, include the session type without prefix, e.g., 1, 01, baselinearm1")
+parser.add_argument("--run", help="Run lvl -- e.g., 1 or 2 (for 01 / 02)")
+parser.add_argument("--ses", help="session, include the session type without prefix 'ses', e.g., 1, 01, baselinearm1")
 parser.add_argument("--type", help="type of group -- run-01 or session-baselinearm1")
 parser.add_argument("--model", help="model permutation,"
                                     " e.g. contrast-Sgain-Neut_mask-mni152_mot-opt5_mod-FixMod_fwhm-6.0")
@@ -99,8 +101,9 @@ args = parser.parse_args()
 # Now you can access the arguments as attributes of the 'args' object.
 sample = args.sample
 task = args.task
+run = args.run
 ses = args.ses
-type = args.type
+grptype = args.type
 brainmask = args.mask
 mask_label = args.mask_label
 model = args.model
@@ -115,10 +118,20 @@ contrasts = [
 
 for contrast in contrasts:
     print(f'\t Working on contrast map: {contrast}')
+    if 'run' == type:
+        # find all contrast fixed effect maps for model permutation across subjects
+        list_maps = sorted(glob(f'{fix_dir}/*_ses-{ses}_task-{task}'
+                                f'_run-0{run}_{model}_stat-beta.nii.gz'))
+        group_onesample(fixedeffect_paths=list_maps, session=ses, task_type=task,
+                        contrast_type=contrast, group_outdir=scratch_out,
+                        model_permutation=model, mask=brainmask, level=grptype)
 
-    # find all contrast fixed effect maps for model permutation across subjects
-    fix_maps = sorted(glob(f'{fix_dir}/*_ses-{ses}_task-{task}_*'
-                           f'contrast-{contrast}_{model}_stat-effect.nii.gz'))
-    group_onesample(fixedeffect_paths=fix_maps, session=ses, task_type=task,
-                    contrast_type=contrast, group_outdir=scratch_out,
-                    model_permutation=model, mask=brainmask, level=type)
+    elif 'session' == type:
+        # find all contrast fixed effect maps for model permutation across subjects
+        list_maps = sorted(glob(f'{fix_dir}/*_ses-{ses}_task-{task}_*'
+                                f'contrast-{contrast}_{model}_stat-effect.nii.gz'))
+        group_onesample(fixedeffect_paths=list_maps, session=ses, task_type=task,
+                        contrast_type=contrast, group_outdir=scratch_out,
+                        model_permutation=model, mask=brainmask, level=grptype)
+    else:
+        print("incorrect group type provided. Options run or session")
