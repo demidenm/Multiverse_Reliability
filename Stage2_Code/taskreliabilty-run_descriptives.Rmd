@@ -271,7 +271,7 @@ bs_suprathresh <-  bs_suprathresh %>% mutate(
   mutate(con = gsub("-", "", con))
 
 # MSWS
-ws_subthresh <- rbind(abcd_ws_subthresh, ahrb_ws_subthresh, mls_bs_subthresh)
+ws_subthresh <- rbind(abcd_ws_subthresh, ahrb_ws_subthresh, mls_ws_subthresh)
 ws_subthresh <- ws_subthresh %>% mutate(
     con = gsub("contrast-", "", con),
     motion = gsub("mot-", "", motion),
@@ -279,7 +279,7 @@ ws_subthresh <- ws_subthresh %>% mutate(
     fwhm = gsub("fwhm-", "", fwhm)
   ) %>% 
   mutate(con = gsub("-", "", con))
-ws_suprathresh <- rbind(abcd_ws_suprathresh, ahrb_ws_suprathresh, mls_bs_suprathresh)
+ws_suprathresh <- rbind(abcd_ws_suprathresh, ahrb_ws_suprathresh, mls_ws_suprathresh)
 ws_suprathresh <-  ws_suprathresh %>% mutate(
     con = gsub("contrast-", "", con),
     motion = gsub("mot-", "", motion),
