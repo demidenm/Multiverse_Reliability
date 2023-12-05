@@ -1,0 +1,1035 @@
+---
+title: "Descriptives - Run Models"
+author: "<h3>by Michael Demidenko</h3>"
+date: "`r format(Sys.time(), '%B %Y')`"
+output:
+  html_document:
+    theme: united
+    highlight: tango
+    toc: yes
+    number_sections: yes
+    toc_depth: 2
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+    code_folding: hide
+    self_contained: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
+tags: []
+subtitle: <h2><u>Reliability, fMRI, tasks </u></h2>
+---
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+if (!require("pacman")) install.packages("pacman")
+
+pacman::p_load(tidyverse, ggplot2, knitr, kableExtra, ggpubr, lme4, sjPlot, specr, ggrain, neuRosim, emmeans, zoo, stringr)
+
+pal<- c("#1D91C0","#67001F","#CB181D","#78C679","#F46D43","#F7FCFD",
+                 "#A6CEE3","#FD8D3C","#A6D854","#D4B9DA","#6A51A3",
+                 "#7F0000","#D9D9D9","#FFF7BC","#000000","#F0F0F0",
+                 "#C7EAE5","#003C30","#F16913","#FFF7FB","#8C6BB1",
+                 "#C7E9B4","#762A83","#FC9272","#DF65B0","#EF3B2C",
+                 "#74C476","#E5F5F9","#AE017E","#F7F7F7")
+
+
+session_info = sessionInfo()
+system=session_info[[1]][1]
+R_vers = session_info[[1]][13]
+```
+
+Plotting function to reduce code length + simplify. Then, short function to place MLS weight smoothing kernel into same category to make visually consistent, updates are:
+
+- 3.0 --> 3.6
+- 4.0 --> 4.8
+- 5.0 --> 6.0
+- 6.0 --> 7.2
+- 7.0 --> 8.4
+
+```{r}
+create_plot <- function(dataset, type, thresh) {
+  plot <- dataset %>%
+    ggplot(aes(x = .data[[type]], y = median_est, fill = .data[[type]], color = .data[[type]])) +
+    geom_rain(alpha = .5, rain.side = 'l',
+              boxplot.args = list(color = "black", outlier.shape = NA),
+              boxplot.args.pos = list(
+                position = ggpp::position_dodgenudge(x = .1), width = 0.1
+              )) +
+    facet_grid(~study) +
+    theme_classic() +
+    ggtitle(paste("Distribution by",type,"category (",thresh,"mask)")) +
+    scale_fill_manual(values = pal) +
+    scale_color_manual(values = pal) +
+    guides(fill = 'none', color = 'none') +
+    theme(text = element_text(family = "Times New Roman"),
+          axis.text = element_text(size = 10, angle = 45, hjust = 1),
+          axis.title = element_text(size = 10),
+          legend.text = element_text(size = 10),
+          legend.title = element_text(size = 10),
+          plot.title = element_text(size = 16))
+  
+  return(plot)
+}
+
+update_mls_fwhm <- function(df) {
+  df <- df %>%
+    mutate(fwhm = case_when(
+      fwhm == "fwhm-3.0" ~ "fwhm-3.6",
+      fwhm == "fwhm-4.0" ~ "fwhm-4.8",
+      fwhm == "fwhm-5.0" ~ "fwhm-6.0",
+      fwhm == "fwhm-6.0" ~ "fwhm-7.2",
+      fwhm == "fwhm-7.0" ~ "fwhm-8.4",
+      TRUE ~ as.character(fwhm)  # if none of the conditions match, keep the original value
+    ))
+  return(df)
+}
+
+create_specr_plot <- function(summary_df, est_label) {
+  plot_a = plot_curve(df = summary_df, ci = TRUE, desc = FALSE, legend = FALSE, null = 0)
+  plot_b <- plot_choices(df = summary_df, choices = c("fwhm", "motion","contrast","model"), desc = F, null = 0) +
+    labs(y = "Variables", x = paste("Ordered Specification Curve \n",est_label, "coefficient"))
+  
+  cowplot::plot_grid(plot_a, plot_b, ncol = 1, align = "v", axis = 'tblr',
+                     labels = c('A', 'B'), rel_heights = c(1, 2),
+                     label_fontfamily = "Times", label_size = 12)
+}
+
+calculate_summary_stats <- function(data, variable, est_type) {
+  data %>%
+    select(study, {{variable}}) %>% 
+    group_by(study) %>% 
+    summarise(
+      "est_type" = est_type,
+      "median" = median({{variable}}),
+      "sd" = sd({{variable}}),
+      "min" = min({{variable}}),
+      "max" = max({{variable}})
+    )
+}
+```
+
+The packages are automatically loaded using `pacman`. The reported .html was last ran on the system: `r system` and R version: `r R_vers`
+***
+***
+In the Stage 1 [PCI Registered Report](https://doi.org/10.17605/OSF.IO/NQGEH) we are focused on Individual Continues (intraclass correlation) and the binary/continuoues group similarity (jaccard and spearman). Related to the descriptive file here, we describe each step that contained within this file that is relevant to the registered analyses
+
+**continuous**
+
+We stated:
+
+Aim1: *the range and distribution of median ICCs across each study (three) and analytic decision category (four) are plotted across suprathreshold task-positive and subthreshold ICCs using Rainclouds (Allen et al., 2019) and the median and standard deviation is reported in a table.*
+
+*to visualize the ordered median ICCs across the 360 model permutations for suprathreshold task-positive and subthreshold ICCs, specification curve analyses are used (Simonsohn et al., 2020). Specifically, results across the 360 model permutations are reported using a specification curve to represent the range of estimated effects across the variable permutations. This consists of two panels: Panel A represents the ordered ICC coefficients and the ICC’s associated 95% confidence interval colored based on no significance (gray), negative (red) or positive (blue) significance from the Null (Null here is 0) and Panel B represents the analytic decisions from each of the four categories (see Table 1) that produced the median ICC estimates. In the main text, to compare the highest and lowest ICC’s produced by the model permutations, the 25th percentile and 75th percentile median ICC estimates from the 360 models are reported separately for suprathreshold task-positive and subthreshold activation (the specification curve for all ICC estimates for suprathreshold task-positive and subthreshold activation are provided as supplemental information).*
+
+Aim2: *the range and distribution of median MSBS and MSWS across each study and analytic decision category are plotted across suprathreshold task-positive and subthreshold ICCs using Rainclouds.*
+
+*two separate specification curve analyses report the ordered median MSBS and MSWS coefficients in one panel and the analytic decisions that produced the MSBS and MSWS estimates in a second panel separately for suprathreshold task-positive and subthreshold activation*
+
+**group similarity**
+
+We stated:
+
+Aim1: *For each study, the coefficients are plotted to reflect the distribution and range of coefficients. Both Jaccard’s and Spearman correlation are reported separately.*
+
+***
+***
+
+# Load data {.tabset}
+
+## ABCD
+```{r include=FALSE}
+# ICC
+abcd_icc_subthresh <- read.csv("output/sample-abcd_type-run_stats-est_mask-wilson-sub.tsv", sep = '\t')
+abcd_icc_subthresh$study <- "abcd"
+abcd_icc_suprathresh <- read.csv("output/sample-abcd_type-run_stats-est_mask-wilson-supra.tsv", sep = '\t')
+abcd_icc_suprathresh$study <- "abcd"
+# MSBS
+abcd_bs_subthresh <- read.csv("output/sample-abcd_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
+abcd_bs_subthresh$study <- "abcd"
+abcd_bs_suprathresh <- read.csv("output/sample-abcd_type-run_stats-bs_mask-wilson-supra.tsv", sep = '\t')
+abcd_bs_suprathresh$study <- "abcd"
+# MSWS
+abcd_ws_subthresh <- read.csv("output/sample-abcd_type-run_stats-ws_mask-wilson-sub.tsv", sep = '\t')
+abcd_ws_subthresh$study <- "abcd"
+abcd_ws_suprathresh <- read.csv("output/sample-abcd_type-run_stats-ws_mask-wilson-supra.tsv", sep = '\t')
+abcd_ws_suprathresh$study <- "abcd"
+
+# similarity
+abcd_similarity <- read.csv("output/sample-abcd_type-run_stats-similarity.tsv", sep = '\t')
+abcd_similarity$study <- "abcd"
+```
+
+## AHRB 
+
+
+```{r include=FALSE}
+# ICC
+ahrb_icc_subthresh <- read.csv("output/sample-AHRB_type-run_stats-est_mask-wilson-sub.tsv", sep = '\t')
+ahrb_icc_subthresh$study <- "ahrb"
+ahrb_icc_suprathresh <- read.csv("output/sample-AHRB_type-run_stats-est_mask-wilson-supra.tsv", sep = '\t')
+ahrb_icc_suprathresh$study <- "ahrb"
+# MSBS
+ahrb_bs_subthresh <- read.csv("output/sample-AHRB_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
+ahrb_bs_subthresh$study <- "ahrb"
+ahrb_bs_suprathresh <- read.csv("output/sample-AHRB_type-run_stats-bs_mask-wilson-supra.tsv", sep = '\t')
+ahrb_bs_suprathresh$study <- "ahrb"
+# MSWS
+ahrb_ws_subthresh <- read.csv("output/sample-AHRB_type-run_stats-ws_mask-wilson-sub.tsv", sep = '\t')
+ahrb_ws_subthresh$study <- "ahrb"
+ahrb_ws_suprathresh <- read.csv("output/sample-AHRB_type-run_stats-ws_mask-wilson-supra.tsv", sep = '\t')
+ahrb_ws_suprathresh$study <- "ahrb"
+# similarity
+ahrb_similarity <- read.csv("output/sample-AHRB_type-run_stats-similarity.tsv", sep = '\t')
+ahrb_similarity$study <- "ahrb"
+```
+
+## MLS 
+
+```{r include=FALSE}
+# ICC
+mls_icc_subthresh <- read.csv("output/sample-MLS_type-run_stats-est_mask-wilson-sub.tsv", sep = '\t')
+mls_icc_subthresh$study <- "mls"
+mls_icc_subthresh <- update_mls_fwhm(mls_icc_subthresh)
+
+mls_icc_suprathresh <- read.csv("output/sample-MLS_type-run_stats-est_mask-wilson-supra.tsv", sep = '\t')
+mls_icc_suprathresh$study <- "mls"
+mls_icc_suprathresh <- update_mls_fwhm(mls_icc_suprathresh)
+
+# MSBS
+mls_bs_subthresh <- read.csv("output/sample-MLS_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
+mls_bs_subthresh$study <- "mls"
+mls_bs_subthresh <- update_mls_fwhm(mls_bs_subthresh)
+
+mls_bs_suprathresh <- read.csv("output/sample-MLS_type-run_stats-bs_mask-wilson-supra.tsv", sep = '\t')
+mls_bs_suprathresh$study <- "mls"
+mls_bs_suprathresh <- update_mls_fwhm(mls_bs_suprathresh)
+
+# MSWS
+mls_ws_subthresh <- read.csv("output/sample-MLS_type-run_stats-ws_mask-wilson-sub.tsv", sep = '\t')
+mls_ws_subthresh$study <- "mls"
+mls_ws_subthresh <- update_mls_fwhm(mls_ws_subthresh)
+
+mls_ws_suprathresh <- read.csv("output/sample-MLS_type-run_stats-ws_mask-wilson-supra.tsv", sep = '\t')
+mls_ws_suprathresh$study <- "mls"
+mls_ws_suprathresh <- update_mls_fwhm(mls_ws_suprathresh)
+
+# similarity
+mls_similarity <- read.csv("output/sample-MLS_type-run_stats-similarity.tsv", sep = '\t')
+mls_similarity$study <- "mls"
+mls_similarity <- mls_similarity %>%
+    mutate(fwhm = case_when(
+      fwhm == 3 ~ 3.6,
+      fwhm == 4 ~ 4.8,
+      fwhm == 5 ~ 6.0,
+      fwhm == 6 ~ 7.2,
+      fwhm == 7 ~ 8.4,
+      TRUE ~ fwhm)  # if none of the conditions match, keep the original value
+    )
+```
+
+## combine data
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+# ICC
+icc_subthresh <- rbind(abcd_icc_subthresh, ahrb_icc_subthresh, mls_icc_subthresh)
+icc_subthresh <- icc_subthresh %>% mutate(
+    con = gsub("contrast-", "", con),
+    motion = gsub("mot-", "", motion),
+    model = gsub("mod-", "", model),
+    fwhm = gsub("fwhm-", "", fwhm)
+  ) %>% 
+  mutate(con = gsub("-", "", con))
+
+icc_suprathresh <- rbind(abcd_icc_suprathresh, ahrb_icc_suprathresh, mls_icc_suprathresh)
+icc_suprathresh <-  icc_suprathresh %>% mutate(
+    con = gsub("contrast-", "", con),
+    motion = gsub("mot-", "", motion),
+    model = gsub("mod-", "", model),
+    fwhm = gsub("fwhm-", "", fwhm)
+  ) %>% 
+  mutate(con = gsub("-", "", con))
+
+
+# MSBS
+bs_subthresh <- rbind(abcd_bs_subthresh, ahrb_bs_subthresh, mls_bs_subthresh)
+bs_subthresh <- bs_subthresh %>% mutate(
+    con = gsub("contrast-", "", con),
+    motion = gsub("mot-", "", motion),
+    model = gsub("mod-", "", model),
+    fwhm = gsub("fwhm-", "", fwhm)
+  ) %>% 
+  mutate(con = gsub("-", "", con))
+bs_suprathresh <- rbind(abcd_bs_suprathresh, ahrb_bs_suprathresh, mls_bs_suprathresh)
+bs_suprathresh <-  bs_suprathresh %>% mutate(
+    con = gsub("contrast-", "", con),
+    motion = gsub("mot-", "", motion),
+    model = gsub("mod-", "", model),
+    fwhm = gsub("fwhm-", "", fwhm)
+  ) %>% 
+  mutate(con = gsub("-", "", con))
+
+# MSWS
+ws_subthresh <- rbind(abcd_ws_subthresh, ahrb_ws_subthresh, mls_bs_subthresh)
+ws_subthresh <- ws_subthresh %>% mutate(
+    con = gsub("contrast-", "", con),
+    motion = gsub("mot-", "", motion),
+    model = gsub("mod-", "", model),
+    fwhm = gsub("fwhm-", "", fwhm)
+  ) %>% 
+  mutate(con = gsub("-", "", con))
+ws_suprathresh <- rbind(abcd_ws_suprathresh, ahrb_ws_suprathresh, mls_bs_suprathresh)
+ws_suprathresh <-  ws_suprathresh %>% mutate(
+    con = gsub("contrast-", "", con),
+    motion = gsub("mot-", "", motion),
+    model = gsub("mod-", "", model),
+    fwhm = gsub("fwhm-", "", fwhm)
+  ) %>% 
+  mutate(con = gsub("-", "", con))
+
+# similarity
+similarity_df <- rbind(ahrb_similarity, mls_similarity)
+similarity_df <-  similarity_df %>% 
+  mutate(con = gsub("-", "", con))
+similarity_df$fwhm <- as.character(similarity_df$fwhm)
+
+# remove excess files
+rm(ahrb_bs_subthresh, ahrb_bs_suprathresh, ahrb_icc_subthresh, ahrb_icc_suprathresh, ahrb_ws_subthresh, ahrb_ws_suprathresh,ahrb_similarity,
+   abcd_bs_subthresh, abcd_bs_suprathresh, abcd_icc_subthresh, abcd_icc_suprathresh, abcd_ws_subthresh, abcd_ws_suprathresh,abcd_similarity,
+   mls_bs_subthresh, mls_bs_suprathresh, mls_icc_subthresh, mls_icc_suprathresh, mls_ws_subthresh, mls_ws_suprathresh,mls_similarity)
+```
+
+# Plot distributions {.tabset}
+
+Below, running the steps to summarize the different Intraclass correlation (ICC), Mean Squared Between Subject (MSBS), Mean Square Within Subject (MSWS), and jaccard and spearman similarty for the model combinations `r 5*6*3*4` across samples
+
+## ICC
+
+Plotting overall and for each of [four] categories
+
+### Subthreshold Mask
+
+Creating rainclouds via [ggrain](https://cran.r-project.org/web/packages/ggrain/vignettes/ggrain.html)
+
+```{r}
+fwhm_rg = create_plot(icc_subthresh, "fwhm","sub-threshold")
+motion_rg = create_plot(icc_subthresh, "motion","sub-threshold")
+modeltype_rg = create_plot(icc_subthresh, "model","sub-threshold")
+contrast_rg = create_plot(icc_subthresh, "con","sub-threshold")
+
+fwhm_rg
+motion_rg
+modeltype_rg
+contrast_rg
+```
+
+
+### Suprathreshold Mask
+
+
+```{r}
+fwhm_rg = create_plot(icc_suprathresh, "fwhm","supra-threshold")
+motion_rg = create_plot(icc_suprathresh, "motion","supra-threshold")
+modeltype_rg = create_plot(icc_suprathresh, "model","supra-threshold")
+contrast_rg = create_plot(icc_suprathresh, "con","supra-threshold")
+
+fwhm_rg
+motion_rg
+modeltype_rg
+contrast_rg
+```
+
+## MSBS
+
+Plotting overall and for each of [four] categories
+
+### Subthreshold Mask
+
+```{r}
+fwhm_rg = create_plot(bs_subthresh, "fwhm","sub-threshold")
+motion_rg = create_plot(bs_subthresh, "motion","sub-threshold")
+modeltype_rg = create_plot(bs_subthresh, "model","sub-threshold")
+contrast_rg = create_plot(bs_subthresh, "con","sub-threshold")
+
+fwhm_rg
+motion_rg
+modeltype_rg
+contrast_rg
+```
+
+### Suprathreshold Mask
+
+```{r}
+fwhm_rg = create_plot(bs_suprathresh, "fwhm","supra-threshold")
+motion_rg = create_plot(bs_suprathresh, "motion","supra-threshold")
+modeltype_rg = create_plot(bs_suprathresh, "model","supra-threshold")
+contrast_rg = create_plot(bs_suprathresh, "con","supra-threshold")
+
+fwhm_rg
+motion_rg
+modeltype_rg
+contrast_rg
+```
+
+
+## MSWS
+
+Plotting overall and for each of [four] categories
+
+### Subthreshold Mask
+
+```{r}
+fwhm_rg = create_plot(ws_subthresh, "fwhm","sub-threshold")
+motion_rg = create_plot(ws_subthresh, "motion","sub-threshold")
+modeltype_rg = create_plot(ws_subthresh, "model","sub-threshold")
+contrast_rg = create_plot(ws_subthresh, "con","sub-threshold")
+
+fwhm_rg
+motion_rg
+modeltype_rg
+contrast_rg
+```
+
+### Suprathreshold Mask
+
+```{r}
+fwhm_rg = create_plot(ws_suprathresh, "fwhm","supra-threshold")
+motion_rg = create_plot(ws_suprathresh, "motion","supra-threshold")
+modeltype_rg = create_plot(ws_suprathresh, "model","supra-threshold")
+contrast_rg = create_plot(ws_suprathresh, "con","supra-threshold")
+fwhm_rg
+motion_rg
+modeltype_rg
+contrast_rg
+```
+
+
+## Similarity
+
+### jaccard
+
+```{r}
+fwhm_rg = similarity_df %>% ggplot(aes(x = fwhm, y = jaccard, fill = fwhm, color = fwhm)) +
+  geom_rain(alpha = .5, rain.side = 'l',
+            boxplot.args = list(color = "black", outlier.shape = NA),
+            boxplot.args.pos = list(
+              position = ggpp::position_dodgenudge(x = .1), width = 0.1
+            )) +
+  theme_classic() +
+  facet_grid(~study) +
+  ggtitle("Distribution by FWHN category  (Jaccard)") +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  guides(fill = 'none', color = 'none') +
+  theme(text = element_text(family = "Times New Roman"),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        plot.title = element_text(size = 16))
+
+
+motion_rg = similarity_df %>% ggplot(aes(x = motion, y = jaccard, fill = motion, color = motion)) +
+  geom_rain(alpha = .5, rain.side = 'l',
+            boxplot.args = list(color = "black", outlier.shape = NA),
+            boxplot.args.pos = list(
+              position = ggpp::position_dodgenudge(x = .1), width = 0.1
+            )) +
+  facet_grid(~study) +
+  theme_classic() +
+  ggtitle("Distribution by Motion category (Jaccard)") +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  guides(fill = 'none', color = 'none') +
+  theme(text = element_text(family = "Times New Roman"),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        plot.title = element_text(size = 16))
+
+modeltype_rg = similarity_df %>% ggplot(aes(x = model, y = jaccard, fill = model, color = model)) +
+  geom_rain(alpha = .5, rain.side = 'l',
+            boxplot.args = list(color = "black", outlier.shape = NA),
+            boxplot.args.pos = list(
+              position = ggpp::position_dodgenudge(x = .1), width = 0.1
+            )) +
+  facet_grid(~study) +
+  theme_classic() +
+  ggtitle("Distribution by Model Type category  (Jaccard)") +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  guides(fill = 'none', color = 'none') +
+  theme(text = element_text(family = "Times New Roman"),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        plot.title = element_text(size = 16))
+
+contrast_rg = similarity_df %>% ggplot(aes(x = con, y = jaccard, fill = con, color = con)) +
+  geom_rain(alpha = .5, rain.side = 'l',
+            boxplot.args = list(color = "black", outlier.shape = NA),
+            boxplot.args.pos = list(
+              position = ggpp::position_dodgenudge(x = .1), width = 0.1
+            )) +
+  facet_grid(~study) +
+  theme_classic() +
+  ggtitle("Distribution by Contrast category  (Jaccard)") +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  guides(fill = 'none', color = 'none') +
+  theme(text = element_text(family = "Times New Roman"),
+        axis.text = element_text(size = 10, angle = 45, hjust = 1),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        plot.title = element_text(size = 16))
+
+fwhm_rg
+motion_rg
+modeltype_rg
+contrast_rg
+```
+
+### spearman
+
+```{r}
+fwhm_rg = similarity_df %>% ggplot(aes(x = fwhm, y = spearman, fill = fwhm, color = fwhm)) +
+  geom_rain(alpha = .5, rain.side = 'l',
+            boxplot.args = list(color = "black", outlier.shape = NA),
+            boxplot.args.pos = list(
+              position = ggpp::position_dodgenudge(x = .1), width = 0.1
+            )) +
+  facet_grid(~study) +
+  theme_classic() +
+  ggtitle("Distribution by FWHN category  (spearman)") +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  guides(fill = 'none', color = 'none') +
+  theme(text = element_text(family = "Times New Roman"),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        plot.title = element_text(size = 16))
+
+
+motion_rg = similarity_df %>% ggplot(aes(x = motion, y = spearman, fill = motion, color = motion)) +
+  geom_rain(alpha = .5, rain.side = 'l',
+            boxplot.args = list(color = "black", outlier.shape = NA),
+            boxplot.args.pos = list(
+              position = ggpp::position_dodgenudge(x = .1), width = 0.1
+            )) +
+  facet_grid(~study) +
+  theme_classic() +
+  ggtitle("Distribution by Motion category (spearman)") +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  guides(fill = 'none', color = 'none') +
+  theme(text = element_text(family = "Times New Roman"),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        plot.title = element_text(size = 16))
+
+modeltype_rg = similarity_df %>% ggplot(aes(x = model, y = spearman, fill = model, color = model)) +
+  geom_rain(alpha = .5, rain.side = 'l',
+            boxplot.args = list(color = "black", outlier.shape = NA),
+            boxplot.args.pos = list(
+              position = ggpp::position_dodgenudge(x = .1), width = 0.1
+            )) +
+  facet_grid(~study) +
+  theme_classic() +
+  ggtitle("Distribution by Model Type category  (spearman)") +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  guides(fill = 'none', color = 'none') +
+  theme(text = element_text(family = "Times New Roman"),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        plot.title = element_text(size = 16))
+
+contrast_rg = similarity_df %>% ggplot(aes(x = con, y = spearman, fill = con, color = con)) +
+  geom_rain(alpha = .5, rain.side = 'l',
+            boxplot.args = list(color = "black", outlier.shape = NA),
+            boxplot.args.pos = list(
+              position = ggpp::position_dodgenudge(x = .1), width = 0.1
+            )) +
+  facet_grid(~study) +
+  theme_classic() +
+  ggtitle("Distribution by Contrast category  (spearman)") +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  guides(fill = 'none', color = 'none') +
+  theme(text = element_text(family = "Times New Roman"),
+        axis.text = element_text(size = 10, angle = 45, hjust = 1),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        plot.title = element_text(size = 16))
+
+fwhm_rg
+motion_rg
+modeltype_rg
+contrast_rg
+```
+
+## Group Cohen's ~ ICC 
+
+```{r}
+cohens_sim <- gather(similarity_df, key = "Run", value = "spearman", run1_icc_cohensd:run2_icc_cohensd) %>% 
+  mutate(Run = case_when(
+    Run == "run1_icc_cohensd" ~ "Run1",
+    Run == "run2_icc_cohensd" ~ "Run2",
+    TRUE ~ Run
+  ))
+```
+
+
+```{r}
+cohens_sim %>% ggplot(aes(x = fwhm, y = spearman, fill = fwhm, color = fwhm)) +
+  geom_rain(alpha = .5, rain.side = 'l',
+            boxplot.args = list(color = "black", outlier.shape = NA),
+            boxplot.args.pos = list(
+              position = ggpp::position_dodgenudge(x = .2), width = 0.1
+            )) +
+  facet_grid(~study + Run) +
+  theme_classic() +
+  ggtitle("Distribution by FWHM category") +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  guides(fill = 'none', color = 'none') +
+  theme(text = element_text(family = "Times New Roman"),
+        axis.text = element_text(size = 10, angle = 45, hjust = 1),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        plot.title = element_text(size = 16))
+
+cohens_sim %>% ggplot(aes(x = con, y = spearman, fill = con, color = con)) +
+  geom_rain(alpha = .5, rain.side = 'l',
+            boxplot.args = list(color = "black", outlier.shape = NA),
+            boxplot.args.pos = list(
+              position = ggpp::position_dodgenudge(x = .2), width = 0.1
+            )) +
+  facet_grid(~study + Run) +
+  theme_classic() +
+  ggtitle("Distribution by Contrast category") +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  guides(fill = 'none', color = 'none') +
+  theme(text = element_text(family = "Times New Roman"),
+        axis.text = element_text(size = 10, angle = 45, hjust = 1),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        plot.title = element_text(size = 16))
+
+
+cohens_sim %>% ggplot(aes(x = motion, y = spearman, fill = motion, color = motion)) +
+  geom_rain(alpha = .5, rain.side = 'l',
+            boxplot.args = list(color = "black", outlier.shape = NA),
+            boxplot.args.pos = list(
+              position = ggpp::position_dodgenudge(x = .2), width = 0.1
+            )) +
+  facet_grid(~study + Run) +
+  theme_classic() +
+  ggtitle("Distribution by Motion category") +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  guides(fill = 'none', color = 'none') +
+  theme(text = element_text(family = "Times New Roman"),
+        axis.text = element_text(size = 10, angle = 45, hjust = 1),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        plot.title = element_text(size = 16))
+
+cohens_sim %>% ggplot(aes(x = model, y = spearman, fill = model, color = model)) +
+  geom_rain(alpha = .5, rain.side = 'l',
+            boxplot.args = list(color = "black", outlier.shape = NA),
+            boxplot.args.pos = list(
+              position = ggpp::position_dodgenudge(x = .2), width = 0.1
+            )) +
+  facet_grid(~study + Run) +
+  theme_classic() +
+  ggtitle("Distribution by Model category") +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  guides(fill = 'none', color = 'none') +
+  theme(text = element_text(family = "Times New Roman"),
+        axis.text = element_text(size = 10, angle = 45, hjust = 1),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        plot.title = element_text(size = 16))
+```
+
+# Med/Min/Max Across Models {.tabset}
+`
+
+## Subtreshold
+
+```{r}
+cat("Subthreshold mask")
+cat("\tICC, MSBS and MSWS median, miniumum and maximum")
+calculate_summary_stats(icc_subthresh, median_est, "ICC")
+calculate_summary_stats(bs_subthresh, median_est, "MSBS")
+calculate_summary_stats(ws_subthresh, median_est, "MSWS")
+```
+
+## Suprathreshold
+```{r message=FALSE, warning=FALSE}
+cat("Suprathreshold mask")
+cat("\tICC, MSBS and MSWS median, miniumum and maximum")
+calculate_summary_stats(icc_suprathresh, median_est, "ICC")
+calculate_summary_stats(bs_suprathresh, median_est, "MSBS")
+calculate_summary_stats(ws_suprathresh, median_est, "MSWS")
+```
+
+## simlarity
+
+```{r}
+cat("Similarity median, minimum and maximum for jaccard and spearman")
+calculate_summary_stats(similarity_df, jaccard, "Jaccard")
+calculate_summary_stats(similarity_df, spearman, "Spearman")
+```
+
+
+# Specification Curve {.tabset}
+
+Creating data in a format that is compatible with [specr](https://cran.r-project.org/web/packages/specr/specr.pdf). Needs: estimate (i.e., ICC), std.error, conf.high, conf.low.
+
+
+## ICC
+
+
+### suprathreshold 
+
+#### All models
+
+creating combined panel 1 and panel 2 for all model permutations first.
+
+```{r fig.height=6, fig.width=5, warning=FALSE}
+# first, combine independent model vars into string to create average for each model type
+icc_suprathresh$model_type <- paste(icc_suprathresh$fwhm, icc_suprathresh$motion,
+                                    icc_suprathresh$con,  icc_suprathresh$model,
+                                    sep = "_")
+
+# calculate the avg estimate of ICC across study, standard error and +/- 95% confidence interval. In complete version
+df_summ <- icc_suprathresh %>% 
+  group_by(model_type) %>% 
+  summarise(estimate = mean(median_est), std.error = sd(median_est)/sqrt(length(median_est))) %>% 
+  mutate(conf.low = estimate - 1.96 * std.error, conf.high = estimate + 1.96 * std.error) %>% 
+  separate(col = model_type, into = c("fwhm","motion","contrast","model"), sep = "_|-", remove = FALSE)
+
+# plot
+est_label = "supra-threshod ICC"
+create_specr_plot(df_summ, est_label)
+```
+
+
+#### subset models
+
+Creating model that is subset to visualize reliability for the top (>75th) and bottom (< 25th) quartile
+
+```{r fig.height=6, fig.width=5, warning=FALSE}
+# get 75th/25th qunatiles
+top_75q = as.numeric(quantile(df_summ$estimate, .75))
+bot_25q = as.numeric(quantile(df_summ$estimate, .25))
+df_summ_subset = df_summ %>% 
+  filter(estimate < bot_25q | estimate > top_75q)
+
+# subset plots
+est_label = "supra-threshold ICC"
+create_specr_plot(df_summ_subset, est_label)
+```
+
+### subthreshold 
+
+#### All models
+
+creating combined panel 1 and panel 2 for all model permutations first.
+
+```{r fig.height=6, fig.width=5, warning=FALSE}
+icc_subthresh$model_type <- paste(icc_subthresh$fwhm, icc_subthresh$motion,
+                                  icc_subthresh$con,  icc_subthresh$model,
+                                  sep = "_")
+
+df_summ <- icc_subthresh %>% 
+  group_by(model_type) %>% 
+  summarise(estimate = mean(median_est), std.error = sd(median_est)/sqrt(length(median_est))) %>% 
+  mutate(conf.low = estimate - 1.96 * std.error, conf.high = estimate + 1.96 * std.error) %>% 
+  separate(col = model_type, into = c("fwhm","motion","contrast","model"), sep = "_|-", remove = FALSE)
+
+# plot
+est_label = "sub-threshold ICC"
+create_specr_plot(df_summ, est_label)
+```
+
+
+#### subset models
+
+Creating model that is subset to visualize reliability for the top (>75th) and bottom (< 25th) quartile
+
+```{r fig.height=6, fig.width=5, warning=FALSE}
+# get 75th/25th qunatiles
+top_75q = as.numeric(quantile(df_summ$estimate, .75))
+bot_25q = as.numeric(quantile(df_summ$estimate, .25))
+df_summ_subset = df_summ %>% 
+  filter(estimate < bot_25q | estimate > top_75q)
+
+# subset plots
+est_label = "sub-threshold ICC"
+create_specr_plot(df_summ_subset, est_label)
+```
+
+
+## MSBS
+
+### suprathreshold 
+
+#### All models
+
+creating combined panel 1 and panel 2 for all model permutations first.
+
+```{r fig.height=6, fig.width=5, warning=FALSE}
+bs_suprathresh$model_type <- paste(bs_suprathresh$fwhm, bs_suprathresh$motion,
+                                   bs_suprathresh$con,  bs_suprathresh$model,
+                                   sep = "_")
+
+df_summ <- bs_suprathresh %>% 
+  group_by(model_type) %>% 
+  summarise(estimate = mean(median_est), std.error = sd(median_est)/sqrt(length(median_est))) %>% 
+  mutate(conf.low = estimate - 1.96 * std.error, conf.high = estimate + 1.96 * std.error) %>% 
+  separate(col = model_type, into = c("fwhm","motion","contrast","model"), sep = "_|-", remove = FALSE)
+
+# plot
+est_label = "supra-threshold MSBS"
+create_specr_plot(df_summ, est_label)
+```
+
+
+#### subset models
+
+Creating model that is subset to visualize reliability for the top (>75th) and bottom (< 25th) quartile
+
+```{r fig.height=6, fig.width=5, warning=FALSE}
+# get 75th/25th qunatiles
+top_75q = as.numeric(quantile(df_summ$estimate, .75))
+bot_25q = as.numeric(quantile(df_summ$estimate, .25))
+df_summ_subset = df_summ %>% 
+  filter(estimate < bot_25q | estimate > top_75q)
+
+# subset plots
+est_label = "supra-threshold MSBS"
+create_specr_plot(df_summ_subset, est_label)
+```
+
+### subthreshold 
+
+#### All models
+
+creating combined panel 1 and panel 2 for all model permutations first.
+
+```{r fig.height=6, fig.width=5, warning=FALSE}
+bs_subthresh$model_type <- paste(bs_subthresh$fwhm, bs_subthresh$motion,
+                                 bs_subthresh$con,  bs_subthresh$model,
+                                 sep = "_")
+
+
+df_summ <- bs_subthresh %>% 
+  group_by(model_type) %>% 
+  summarise(estimate = mean(median_est), std.error = sd(median_est)/sqrt(length(median_est))) %>% 
+  mutate(conf.low = estimate - 1.96 * std.error, conf.high = estimate + 1.96 * std.error) %>% 
+  separate(col = model_type, into = c("fwhm","motion","contrast","model"), sep = "_|-", remove = FALSE)
+
+# plot
+est_label = "sub-threshold MSBS"
+create_specr_plot(df_summ, est_label)
+```
+
+
+#### subset models
+
+Creating model that is subset to visualize reliability for the top (>75th) and bottom (< 25th) quartile
+
+```{r fig.height=6, fig.width=5, warning=FALSE}
+# get 75th/25th qunatiles
+top_75q = as.numeric(quantile(df_summ$estimate, .75))
+bot_25q = as.numeric(quantile(df_summ$estimate, .25))
+df_summ_subset = df_summ %>% 
+  filter(estimate < bot_25q | estimate > top_75q)
+
+# subset plots
+est_label = "suprathreshold MSBS"
+create_specr_plot(df_summ_subset, est_label)
+```
+
+
+## MSWS
+
+### suprathreshold 
+
+#### All models
+
+creating combined panel 1 and panel 2 for all model permutations first.
+
+```{r fig.height=6, fig.width=5, warning=FALSE}
+ws_suprathresh$model_type <- paste(ws_suprathresh$fwhm, ws_suprathresh$motion,
+                                   bs_suprathresh$con,  ws_suprathresh$model,
+                                   sep = "_")
+
+df_summ <- ws_suprathresh %>% 
+  group_by(model_type) %>% 
+  summarise(estimate = mean(median_est), std.error = sd(median_est)/sqrt(length(median_est))) %>% 
+  mutate(conf.low = estimate - 1.96 * std.error, conf.high = estimate + 1.96 * std.error) %>% 
+  separate(col = model_type, into = c("fwhm","motion","contrast","model"), sep = "_|-", remove = FALSE)
+
+# plot
+est_label = "supra-threshold MSWS"
+create_specr_plot(df_summ, est_label)
+```
+
+
+#### subset models
+
+Creating model that is subset to visualize reliability for the top (>75th) and bottom (< 25th) quartile
+
+```{r fig.height=6, fig.width=5, warning=FALSE}
+# get 75th/25th qunatiles
+top_75q = as.numeric(quantile(df_summ$estimate, .75))
+bot_25q = as.numeric(quantile(df_summ$estimate, .25))
+df_summ_subset = df_summ %>% 
+  filter(estimate < bot_25q | estimate > top_75q)
+
+# subset plots
+est_label = "supra-threshold MSWS"
+create_specr_plot(df_summ_subset, est_label)
+```
+
+### subthreshold 
+
+#### All models
+
+creating combined panel 1 and panel 2 for all model permutations first.
+
+```{r fig.height=6, fig.width=5, warning=FALSE}
+ws_subthresh$model_type <- paste(ws_subthresh$fwhm, ws_subthresh$motion,
+                                 ws_subthresh$con,  ws_subthresh$model,
+                                 sep = "_")
+
+# calculate the avg estimate of ICC across study, standard error and +/- 95% confidence interval. In complete version
+df_summ <- ws_subthresh %>% 
+  group_by(model_type) %>% 
+  summarise(estimate = mean(median_est), std.error = sd(median_est)/sqrt(length(median_est))) %>% 
+  mutate(conf.low = estimate - 1.96 * std.error, conf.high = estimate + 1.96 * std.error) %>% 
+  separate(col = model_type, into = c("fwhm","motion","contrast","model"), sep = "_|-", remove = FALSE)
+
+# plot
+est_label = "sub-threshold MSWS"
+create_specr_plot(df_summ, est_label)
+```
+
+
+#### subset models
+
+Creating model that is subset to visualize reliability for the top (>75th) and bottom (< 25th) quartile
+
+```{r fig.height=6, fig.width=5, warning=FALSE}
+# get 75th/25th qunatiles
+top_75q = as.numeric(quantile(df_summ$estimate, .75))
+bot_25q = as.numeric(quantile(df_summ$estimate, .25))
+df_summ_subset = df_summ %>% 
+  filter(estimate < bot_25q | estimate > top_75q)
+
+# subplot
+est_label = "sub-threshold MSWS"
+create_specr_plot(df_summ_subset, est_label)
+```
+
+## Similarity
+
+### Jaccard 
+
+#### All models
+
+creating combined panel 1 and panel 2 for all model permutations first.
+
+```{r warning=FALSE}
+similarity_df$model_type <- paste(similarity_df$fwhm, similarity_df$motion,
+                                  similarity_df$con, similarity_df$model,
+                                  sep = "_")
+
+df_summ <- similarity_df %>% 
+  group_by(model_type) %>% 
+  summarise(estimate = mean(jaccard), std.error = sd(jaccard)/sqrt(length(jaccard))) %>% 
+  mutate(conf.low = estimate - 1.96 * std.error, conf.high = estimate + 1.96 * std.error) %>% 
+  separate(col = model_type, into = c("fwhm","motion","contrast","model"), sep = "_|-", remove = FALSE)
+
+# plot
+est_label = "Jaccard"
+create_specr_plot(df_summ, est_label)
+```
+
+
+#### subset models
+
+Creating model that is subset to visualize reliability for the top (>75th) and bottom (< 25th) quartile
+
+```{r warning=FALSE}
+# get 75th/25th qunatiles
+top_75q = as.numeric(quantile(df_summ$estimate, .75))
+bot_25q = as.numeric(quantile(df_summ$estimate, .25))
+df_summ_subset = df_summ %>% 
+  filter(estimate < bot_25q | estimate > top_75q)
+
+# subset plots
+est_label = "Jaccard"
+create_specr_plot(df_summ_subset, est_label)
+```
+
+### Spearman 
+
+#### All models
+
+creating combined panel 1 and panel 2 for all model permutations first.
+
+```{r warning=FALSE}
+similarity_df$model_type <- paste(similarity_df$fwhm, similarity_df$motion,
+                                  similarity_df$con,  similarity_df$model, 
+                                  sep = "_")
+
+# calculate the avg estimate of ICC across study, standard error and +/- 95% confidence interval. In complete version
+df_summ <- similarity_df %>% 
+  group_by(model_type) %>% 
+  summarise(estimate = mean(spearman), std.error = sd(spearman)/sqrt(length(spearman))) %>% 
+  mutate(conf.low = estimate - 1.96 * std.error, conf.high = estimate + 1.96 * std.error) %>% 
+  separate(col = model_type, into = c("fwhm","motion","contrast","model"), sep = "_|-", remove = FALSE)
+
+# plot
+est_label = "Spearman"
+create_specr_plot(df_summ, est_label)
+```
+
+
+#### subset models
+
+Creating model that is subset to visualize reliability for the top (>75th) and bottom (< 25th) quartile
+
+```{r warning=FALSE}
+# get 75th/25th qunatiles
+top_75q = as.numeric(quantile(df_summ$estimate, .75))
+bot_25q = as.numeric(quantile(df_summ$estimate, .25))
+df_summ_subset = df_summ %>% 
+  filter(estimate < bot_25q | estimate > top_75q)
+
+# subset plots
+est_label = "Spearman"
+create_specr_plot(df_summ_subset, est_label)
+```
