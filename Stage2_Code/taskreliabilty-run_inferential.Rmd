@@ -1,0 +1,527 @@
+---
+title: "Inferential - Run Models"
+author: "<h3>by Michael Demidenko</h3>"
+date: "`r format(Sys.time(), '%B %Y')`"
+output:
+  html_document:
+    theme: united
+    highlight: tango
+    toc: yes
+    number_sections: yes
+    toc_depth: 2
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+    code_folding: hide
+    self_contained: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
+tags: []
+subtitle: <h2><u>Reliability, fMRI, tasks </u></h2>
+---
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+if (!require("pacman")) install.packages("pacman")
+
+pacman::p_load(tidyverse, ggplot2, knitr, kableExtra, ggpubr, lme4, performance,
+               sjPlot, ggrain, emmeans, zoo, stringr)
+
+session_info = sessionInfo()
+system=session_info[[1]][1]
+R_vers = session_info[[1]][13]
+```
+
+```{r}
+update_mls_fwhm <- function(df) {
+  df <- df %>%
+    mutate(fwhm = case_when(
+      fwhm == "fwhm-3.0" ~ "fwhm-3.6",
+      fwhm == "fwhm-4.0" ~ "fwhm-4.8",
+      fwhm == "fwhm-5.0" ~ "fwhm-6.0",
+      fwhm == "fwhm-6.0" ~ "fwhm-7.2",
+      fwhm == "fwhm-7.0" ~ "fwhm-8.4",
+      TRUE ~ as.character(fwhm)  # if none of the conditions match, keep the original value
+    ))
+  return(df)
+}
+
+compare_models <- function(full_model, full_data, full_r2) {
+  # List of analytic options
+  analytic_options <- c("fwhm", "motion", "model", "con")
+  model_fits <- list()
+  
+  # Summary matrix
+  model_summary <- matrix(NA, ncol = 9, nrow = length(analytic_options))
+  colnames(model_summary) <- c("Comparison", "Full AIC", "Full BIC", "New AIC", "New BIC", "χ2", "Orig R2", "New R2","∆R2")
+  
+  # Refit models with P - 1
+  for (predictor in analytic_options) {
+    # Update model, rerun, save fit
+    updated_formula <- as.formula(paste(". ~ . -", predictor))
+    model_rev <- update(full_model, updated_formula, REML = FALSE)
+    model_fits[[predictor]] <- model_rev
+  }
+  
+  # Compare models: [Full Model] v [P-1 Model] via anova
+  mod_index = 0
+  for (predictor in analytic_options) {
+    mod_index = mod_index + 1
+    # compare models + extract r2
+    out <- anova(full_model, model_fits[[predictor]])
+    marg_r2 <- round(as.numeric(r2_nakagawa(model_fits[[predictor]])[2]), 2)
+    
+    # Save values to summary table
+    model_summary[mod_index, 1] <- paste("[Full] vs [New -", predictor, "]")
+    model_summary[mod_index, 2] <- round(out[2, 2], 3)
+    model_summary[mod_index, 3] <- round(out[2, 3], 3)
+    model_summary[mod_index, 4] <- round(out[1, 2], 3)
+    model_summary[mod_index, 5] <- round(out[1, 3], 3)
+    model_summary[mod_index, 6] <- round(out[2, 6], 3)
+    model_summary[mod_index, 7] <- full_r2
+    model_summary[mod_index, 8] <- marg_r2
+    model_summary[mod_index, 9] <- full_r2 - marg_r2
+  }
+  
+  return(model_summary)
+}
+
+perform_emmeans_contrasts <- function(model) {
+  # Get observation limit from the model
+  mod_lmer_obs <- as.numeric(summary(model)$devcomp$dims[1])
+  emm_options(lmerTest.limit = mod_lmer_obs)
+
+  # list of contrasts and labels
+  contrast_list <- list(
+    pairwise ~ fwhm,
+    pairwise ~ con,
+    pairwise ~ motion,
+    pairwise ~ model
+  )
+
+  labels <- c("FWHM", "Contrast", "Motion Corr", "Model Type")
+
+  # contrasts and  summaries
+  result_list <- list()
+  for (i in seq_along(contrast_list)) {
+    contrast <- contrast_list[[i]]
+    mod_thsd <- emmeans(object = model, specs = contrast, pbkrtest.limit = mod_lmer_obs)
+    
+    # Store the table in the result list
+    result_list[[i]] <- mod_thsd$contrasts %>% summary(infer = TRUE) %>%
+      kable(digits = 4, caption = paste("Contrast Tukey HSD: ", labels[i])) %>%
+      kable_styling()
+  }
+
+  # Return the list of tables
+  return(result_list)
+}
+
+```
+
+
+The packages are automatically loaded using `pacman`. The reported .html was last ran on the system: `r system` and R version: `r R_vers`
+
+***
+***
+In the Stage 1 [PCI Registered Report](https://doi.org/10.17605/OSF.IO/NQGEH) we are focused on Individual Continues (intraclass correlation) and the binary/continuoues group similarity (jaccard and spearman). Related to the descriptive file here, we describe each step that contained within this file that is relevant to the registered analyses
+
+**continuous**
+
+We stated:
+
+Aim1: *HLM is used to regress the median ICC on the [four] analytic decisions as fixed effects with a random intercept and random slope for study across the suprathreshold task-positive and subthreshold maps. If the model does not converge, a random intercept only model will be fit (Matuschek et al., 2017). Multiple comparisons corrections are applied using the Tukey adjustment as implemented in the emmeans package (Lenth et al., 2023). For these HLM models, the interpretation focuses on the significant, non-zero effect of an independent variable (e.g., smoothing) on the dependent *
+
+Aim2: *two HLMs are used to regress the MSBS and MSWS from the median ICC estimate on the [four] analytic decisions as fixed effects with a random intercept and random slope for study across the suprathreshold task-positive and subthreshold maps. If the model does not converge, a random intercept only model will be fit. Multiple comparisons corrections are applied using the Tukey adjustment. Like Aim 1, the interpretation focuses on the significant, non-zero effect of an independent variable (e.g., smoothing) on the dependent variable (e.g., median ICC) while the remaining independent variables are assumed to be zero.*
+
+**group similarity**
+
+We stated:
+
+Aim1: *two HLMs are used to regress the MSBS and MSWS from the median ICC estimate on the [four] analytic decisions as fixed effects with a random intercept and random slope for study across the suprathreshold task-positive and subthreshold maps. If the model does not converge, a random intercept only model will be fit. Multiple comparisons corrections are applied using the Tukey adjustment. Like Aim 1, the interpretation focuses on the significant, non-zero effect of an independent variable (e.g., smoothing) on the dependent variable (e.g., median ICC) while the remaining independent variables are assumed to be zero.*
+
+***
+***
+
+# Load data {.tabset}
+
+## ABCD (PILOT N 20)
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+# ICC
+abcd_icc_subthresh <- read.csv("output/sample-abcd_type-run_stats-est_mask-wilson-sub.tsv", sep = '\t')
+abcd_icc_subthresh$study <- "abcd"
+abcd_icc_suprathresh <- read.csv("output/sample-abcd_type-run_stats-est_mask-wilson-supra.tsv", sep = '\t')
+abcd_icc_suprathresh$study <- "abcd"
+# MSBS
+abcd_bs_subthresh <- read.csv("output/sample-abcd_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
+abcd_bs_subthresh$study <- "abcd"
+abcd_bs_suprathresh <- read.csv("output/sample-abcd_type-run_stats-bs_mask-wilson-supra.tsv", sep = '\t')
+abcd_bs_suprathresh$study <- "abcd"
+# MSWS
+abcd_ws_subthresh <- read.csv("output/sample-abcd_type-run_stats-ws_mask-wilson-sub.tsv", sep = '\t')
+abcd_ws_subthresh$study <- "abcd"
+abcd_ws_suprathresh <- read.csv("output/sample-abcd_type-run_stats-ws_mask-wilson-supra.tsv", sep = '\t')
+abcd_ws_suprathresh$study <- "abcd"
+
+# similarity
+abcd_similarity <- read.csv("output/sample-abcd_type-run_stats-similarity.tsv", sep = '\t')
+abcd_similarity$study <- "abcd"
+```
+
+## AHRB 
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+# ICC
+ahrb_icc_subthresh <- read.csv("output/sample-AHRB_type-run_stats-est_mask-wilson-sub.tsv", sep = '\t')
+ahrb_icc_subthresh$study <- "ahrb"
+ahrb_icc_suprathresh <- read.csv("output/sample-AHRB_type-run_stats-est_mask-wilson-supra.tsv", sep = '\t')
+ahrb_icc_suprathresh$study <- "ahrb"
+# MSBS
+ahrb_bs_subthresh <- read.csv("output/sample-AHRB_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
+ahrb_bs_subthresh$study <- "ahrb"
+ahrb_bs_suprathresh <- read.csv("output/sample-AHRB_type-run_stats-bs_mask-wilson-supra.tsv", sep = '\t')
+ahrb_bs_suprathresh$study <- "ahrb"
+# MSWS
+ahrb_ws_subthresh <- read.csv("output/sample-AHRB_type-run_stats-ws_mask-wilson-sub.tsv", sep = '\t')
+ahrb_ws_subthresh$study <- "ahrb"
+ahrb_ws_suprathresh <- read.csv("output/sample-AHRB_type-run_stats-ws_mask-wilson-supra.tsv", sep = '\t')
+ahrb_ws_suprathresh$study <- "ahrb"
+# similarity
+ahrb_similarity <- read.csv("output/sample-AHRB_type-run_stats-similarity.tsv", sep = '\t')
+ahrb_similarity$study <- "ahrb"
+```
+
+## MLS
+```{r message=FALSE, warning=FALSE, include=FALSE}
+# ICC
+mls_icc_subthresh <- read.csv("output/sample-MLS_type-run_stats-est_mask-wilson-sub.tsv", sep = '\t')
+mls_icc_subthresh$study <- "mls"
+mls_icc_subthresh <- update_mls_fwhm(mls_icc_subthresh)
+
+mls_icc_suprathresh <- read.csv("output/sample-MLS_type-run_stats-est_mask-wilson-supra.tsv", sep = '\t')
+mls_icc_suprathresh$study <- "mls"
+mls_icc_suprathresh <- update_mls_fwhm(mls_icc_suprathresh)
+
+# MSBS
+mls_bs_subthresh <- read.csv("output/sample-MLS_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
+mls_bs_subthresh$study <- "mls"
+mls_bs_subthresh <- update_mls_fwhm(mls_bs_subthresh)
+
+mls_bs_suprathresh <- read.csv("output/sample-MLS_type-run_stats-bs_mask-wilson-supra.tsv", sep = '\t')
+mls_bs_suprathresh$study <- "mls"
+mls_bs_suprathresh <- update_mls_fwhm(mls_bs_suprathresh)
+
+# MSWS
+mls_ws_subthresh <- read.csv("output/sample-MLS_type-run_stats-ws_mask-wilson-sub.tsv", sep = '\t')
+mls_ws_subthresh$study <- "mls"
+mls_ws_subthresh <- update_mls_fwhm(mls_ws_subthresh)
+
+mls_ws_suprathresh <- read.csv("output/sample-MLS_type-run_stats-ws_mask-wilson-supra.tsv", sep = '\t')
+mls_ws_suprathresh$study <- "mls"
+mls_ws_suprathresh <- update_mls_fwhm(mls_ws_suprathresh)
+
+# similarity
+mls_similarity <- read.csv("output/sample-MLS_type-run_stats-similarity.tsv", sep = '\t')
+mls_similarity$study <- "mls"
+mls_similarity <- mls_similarity %>%
+    mutate(fwhm = case_when(
+      fwhm == 3 ~ 3.6,
+      fwhm == 4 ~ 4.8,
+      fwhm == 5 ~ 6.0,
+      fwhm == 6 ~ 7.2,
+      fwhm == 7 ~ 8.4,
+      TRUE ~ fwhm)  # if none of the conditions match, keep the original value
+    )
+```
+
+## combine data
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+# ICC
+icc_subthresh <- rbind(abcd_icc_subthresh, ahrb_icc_subthresh, mls_icc_subthresh)
+icc_subthresh <- icc_subthresh %>% mutate(
+    con = gsub("contrast-", "", con),
+    motion = gsub("mot-", "", motion),
+    model = gsub("mod-", "", model),
+    fwhm = gsub("fwhm-", "", fwhm)
+  ) %>% 
+  mutate(con = gsub("-", "", con))
+icc_suprathresh <- rbind(abcd_icc_suprathresh, ahrb_icc_suprathresh, mls_icc_suprathresh)
+icc_suprathresh <-  icc_suprathresh %>% mutate(
+    con = gsub("contrast-", "", con),
+    motion = gsub("mot-", "", motion),
+    model = gsub("mod-", "", model),
+    fwhm = gsub("fwhm-", "", fwhm)
+  ) %>% 
+  mutate(con = gsub("-", "", con))
+
+# MSBS
+bs_subthresh <- rbind(abcd_bs_subthresh, ahrb_bs_subthresh, mls_bs_subthresh)
+bs_subthresh <- bs_subthresh %>% mutate(
+    con = gsub("contrast-", "", con),
+    motion = gsub("mot-", "", motion),
+    model = gsub("mod-", "", model),
+    fwhm = gsub("fwhm-", "", fwhm)
+  ) %>% 
+  mutate(con = gsub("-", "", con))
+bs_suprathresh <- rbind(abcd_bs_suprathresh, ahrb_bs_suprathresh, mls_bs_suprathresh)
+bs_suprathresh <-  bs_suprathresh %>% mutate(
+    con = gsub("contrast-", "", con),
+    motion = gsub("mot-", "", motion),
+    model = gsub("mod-", "", model),
+    fwhm = gsub("fwhm-", "", fwhm)
+  ) %>% 
+  mutate(con = gsub("-", "", con))
+
+# MSWS
+ws_subthresh <- rbind(abcd_ws_subthresh, ahrb_ws_subthresh, mls_ws_subthresh)
+ws_subthresh <- ws_subthresh %>% mutate(
+    con = gsub("contrast-", "", con),
+    motion = gsub("mot-", "", motion),
+    model = gsub("mod-", "", model),
+    fwhm = gsub("fwhm-", "", fwhm)
+  ) %>% 
+  mutate(con = gsub("-", "", con))
+ws_suprathresh <- rbind(abcd_ws_suprathresh, ahrb_ws_suprathresh, mls_ws_suprathresh)
+ws_suprathresh <-  ws_suprathresh %>% mutate(
+    con = gsub("contrast-", "", con),
+    motion = gsub("mot-", "", motion),
+    model = gsub("mod-", "", model),
+    fwhm = gsub("fwhm-", "", fwhm)
+  ) %>% 
+  mutate(con = gsub("-", "", con))
+
+# similarity
+similarity_df <- rbind(ahrb_similarity, mls_similarity)
+similarity_df <-  similarity_df %>% 
+  mutate(con = gsub("-", "", con))
+similarity_df$fwhm <- as.character(similarity_df$fwhm)
+
+# remove excess files
+rm(ahrb_bs_subthresh, ahrb_bs_suprathresh, ahrb_icc_subthresh, ahrb_icc_suprathresh, ahrb_ws_subthresh, ahrb_ws_suprathresh,ahrb_similarity,
+   abcd_bs_subthresh, abcd_bs_suprathresh, abcd_icc_subthresh, abcd_icc_suprathresh, abcd_ws_subthresh, abcd_ws_suprathresh,abcd_similarity,
+   mls_bs_subthresh, mls_bs_suprathresh, mls_icc_subthresh, mls_icc_suprathresh, mls_ws_subthresh, mls_ws_suprathresh,mls_similarity)
+
+```
+
+
+# Fitting HLM {.tabset}
+
+Below using `lmer` to fit HLM model. The model has random intercept (sample). e.g., Level 1 model: Median ICC ~ Beta Estimates. Level 2 model: Random intercept. For reproducible reporting using [tab_model](https://www.rdocumentation.org/packages/sjPlot/versions/2.8.4/topics/tab_model)
+
+Using [emmeans](https://www.rdocumentation.org/packages/emmeans/versions/1.3.2/topics/emmeans-package) to control type I error rate of controls via [Tukey's Honest Significant Test](https://en.wikipedia.org/wiki/Tukey%27s_range_test)
+
+## ICC
+
+### suprathreshold
+
+#### HLM Model
+
+Running w/ random slope + intercept: `boundary (singular) fit: see help('isSingular')`, per registered report using random intercept only model.
+
+R squared:
+
+- Conditional: variance explained for ENTIRE model; 
+- Marginal: variance explained for Fixed effects only
+
+
+```{r warning=FALSE}
+# if the above model does not converge, random intercept only model will be used:
+model = lmer(median_est ~ fwhm + motion + model + con + (1 | study), data = icc_suprathresh, REML = FALSE)
+orig_r2 = round(as.numeric(r2_nakagawa(model)[2]),2)
+tab_model(model)
+```
+
+
+```{r message=FALSE, warning=FALSE}
+options(scipen = 999, digits = 4)
+model_summary <- compare_models(full_model = model, full_data = icc_suprathresh, full_r2 = orig_r2)
+
+kable(model_summary, caption = "Model outputs for Supra-threshold ICC", booktabs = TRUE) %>%
+  kable_styling(font_size = 12, position = 'center',html_font = "Times New Roman")
+```
+
+
+#### Tukey's emmeans
+
+```{r results='asis'}
+perform_emmeans_contrasts(model)
+```
+
+### subthreshold
+
+#### HLM Model
+
+```{r warning=FALSE}
+model_sub = lmer(median_est ~ fwhm + motion + model + con + (1 | study), data = icc_subthresh, REML = FALSE)
+orig_r2_sub = round(as.numeric(r2_nakagawa(model_sub)[2]),2)
+tab_model(model_sub)
+```
+
+```{r warning=FALSE}
+model_summary <- compare_models(full_model = model_sub, full_data = icc_subthresh, full_r2 = orig_r2_sub)
+
+kable(model_summary, caption = "Model outputs for Sub-threshold ICC", booktabs = TRUE) %>%
+  kable_styling(font_size = 12, position = 'center',html_font = "Times New Roman")
+```
+
+#### Tukey's emmeans
+
+```{r results='asis'}
+perform_emmeans_contrasts(model_sub)
+```
+
+
+## MSBS
+
+### suprathreshold
+
+#### HLM Model
+
+```{r warning=FALSE}
+model = lmer(median_est ~ fwhm + motion + model + con + (1 | study), data = bs_suprathresh, REML = FALSE)
+orig_r2 = round(as.numeric(r2_nakagawa(model)[2]),2)
+tab_model(model)
+```
+
+```{r warning=FALSE}
+model_summary <- compare_models(full_model = model, full_data = bs_suprathresh, full_r2 = orig_r2)
+
+kable(model_summary, caption = "Model outputs for Supra-threshold MSBS", booktabs = TRUE) %>%
+  kable_styling(font_size = 12, position = 'center',html_font = "Times New Roman")
+```
+
+
+#### Tukey's emmeans
+
+```{r results='asis'}
+perform_emmeans_contrasts(model)
+```
+
+### subthreshold
+
+#### HLM Model
+
+```{r warning=FALSE}
+model_sub = lmer(median_est ~ fwhm + motion + model + con + (1 | study), data = bs_subthresh, REML = FALSE)
+orig_r2_sub = round(as.numeric(r2_nakagawa(model_sub)[2]),2)
+tab_model(model_sub)
+```
+
+```{r warning=FALSE}
+model_summary <- compare_models(full_model = model_sub, full_data = bs_subthresh, full_r2 = orig_r2_sub)
+
+kable(model_summary, caption = "Model outputs for Sub-threshold MSBS", booktabs = TRUE) %>%
+  kable_styling(font_size = 12, position = 'center',html_font = "Times New Roman")
+```
+
+#### Tukey's emmeans
+
+```{r}
+perform_emmeans_contrasts(model_sub)
+```
+
+## MSWS
+
+### suprathreshold
+
+#### HLM Model
+
+
+```{r warning=FALSE}
+model = lmer(median_est ~ fwhm + motion + model + con + (1 | study), data = ws_suprathresh, REML = FALSE)
+orig_r2 = round(as.numeric(r2_nakagawa(model)[2]),2)
+tab_model(model)
+```
+
+```{r warning=FALSE}
+model_summary <- compare_models(full_model = model, full_data = ws_suprathresh, full_r2 = orig_r2)
+
+kable(model_summary, caption = "Model outputs for Supra-threshold MSWS", booktabs = TRUE) %>%
+  kable_styling(font_size = 12, position = 'center',html_font = "Times New Roman")
+```
+
+#### Tukey's emmeans
+
+```{r results='asis'}
+perform_emmeans_contrasts(model)
+```
+
+### subthreshold
+
+#### HLM Model
+
+```{r warning=FALSE}
+model_sub = lmer(median_est ~ fwhm + motion + model + con + (1 | study), data = ws_subthresh, REML = FALSE)
+orig_r2_sub = round(as.numeric(r2_nakagawa(model_sub)[2]),2)
+tab_model(model_sub)
+```
+
+```{r warning=FALSE}
+model_summary <- compare_models(full_model = model_sub, full_data = ws_subthresh, full_r2 = orig_r2_sub)
+
+kable(model_summary, caption = "Model outputs for Sub-threshold MSWS", booktabs = TRUE) %>%
+  kable_styling(font_size = 12, position = 'center',html_font = "Times New Roman")
+```
+
+#### Tukey's emmeans
+
+```{r}
+perform_emmeans_contrasts(model_sub)
+```
+
+## Similarity
+
+### Jaccard
+
+#### HLM Model
+
+```{r warning=FALSE}
+model = lmer(jaccard ~ fwhm + motion + model + con + (1 | study), data = similarity_df, REML = FALSE)
+orig_r2 = round(as.numeric(r2_nakagawa(model)[2]),2)
+tab_model(model)
+```
+
+```{r warning=FALSE}
+model_summary <- compare_models(full_model = model, full_data = similarity_df, full_r2 = orig_r2)
+
+kable(model_summary, caption = "Model outputs for Jaccard Similarity", booktabs = TRUE) %>%
+  kable_styling(font_size = 12, position = 'center',html_font = "Times New Roman")
+```
+
+#### Tukey's emmeans
+
+```{r results='asis'}
+perform_emmeans_contrasts(model)
+```
+
+
+### Spearman
+
+#### HLM Model
+
+```{r warning=FALSE}
+model = lmer(spearman ~ fwhm + motion + model + con + (1 | study), data = similarity_df, REML = FALSE)
+orig_r2 = round(as.numeric(r2_nakagawa(model)[2]),2)
+tab_model(model)
+```
+
+```{r warning=FALSE}
+model_summary <- compare_models(full_model = model, full_data = similarity_df, full_r2 = orig_r2)
+
+kable(model_summary, caption = "Model outputs for Spearman rho", booktabs = TRUE) %>%
+  kable_styling(font_size = 12, position = 'center',html_font = "Times New Roman")
+```
+
+#### Tukey's emmeans
+
+```{r results='asis'}
+perform_emmeans_contrasts(model)
+```
+
+# Stability of the correlation
+
+
+
