@@ -1,14 +1,18 @@
+import warnings
+warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", category=UserWarning,
+                        message="A NumPy version >=1.18.5 and <1.25.0 is required for this version of SciPy*")
 import sys
 import os
 import argparse
-import warnings
 import numpy as np
 import pandas as pd
 import nibabel as nib
 from glob import glob
 from itertools import product
 from nilearn.glm.first_level import FirstLevelModel
-warnings.filterwarnings("ignore")
+
+
 
 # Getpath to Stage2 scripts
 project_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -183,7 +187,8 @@ for run in runs:
             # efficiency estimates
             con_matrix = pd.DataFrame(columns=design_matrix.columns)
             for contrast_name, contrast_dict in contrast_weights.items():
-                con_matrix = con_matrix.append(pd.Series(contrast_dict, name=contrast_name))
+                con_matrix = pd.concat([con_matrix, pd.Series(contrast_dict, name=contrast_name)])
+
             con_matrix = con_matrix.fillna(0)
             print(f'\t\t\t size of design matrix: {design_matrix.shape} & contrast matrix: {con_matrix.shape}')
             series_eff = pd.DataFrame(

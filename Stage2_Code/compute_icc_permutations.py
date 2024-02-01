@@ -1,6 +1,9 @@
+import warnings
+warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", category=UserWarning, 
+                        message="A NumPy version >=1.18.5 and <1.25.0 is required for this version of SciPy*")
 import os
 import argparse
-import warnings
 import nibabel as nib
 from glob import glob
 from pyrelimri import brain_icc

@@ -1,12 +1,15 @@
+import warnings
+warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", category=UserWarning,
+                        message="A NumPy version >=1.18.5 and <1.25.0 is required for this version of SciPy*")
 import os
 import argparse
-import warnings
 import numpy as np
 import pandas as pd
 from glob import glob
 from itertools import product
 from nilearn.glm import compute_fixed_effects
-warnings.filterwarnings("ignore")
+
 
 
 def fixed_effect(subject: str, session: str, task_type: str,
