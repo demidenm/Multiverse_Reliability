@@ -157,7 +157,6 @@ for run in runs:
             # import behavior events .tsv from data path
             events_df = pd.read_csv(f'{beh_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_run-{run}_events.tsv',
                                     sep='\t')
-
             if sample == 'abcd':
                 events_df = events_df.rename(columns=dict_renamecols_abcd)
                 events_df['TRIAL_TYPE'] = events_df['TRIAL_TYPE'].replace(dict_rename_cuetype)
@@ -166,7 +165,6 @@ for run in runs:
                 events_df['TRIAL_TYPE'] = events_df['TRIAL_TYPE'].replace(dict_rename_cuetype)
             else:
                 print("Assuming AHRB sample, continuing")
-
             # get path to confounds from fmriprep, func data + mask
             # set image path
             conf_path = f'{fmriprep_path}/{subj}/ses-{ses}/func/{subj}_ses-{ses}_task-{task}_run-{run}' \
@@ -186,17 +184,22 @@ for run in runs:
             print('\t\t 3/5 Estimate design efficiency')
             # efficiency estimates
             con_matrix = pd.DataFrame(columns=design_matrix.columns)
+            con_weight_series = []
             for contrast_name, contrast_dict in contrast_weights.items():
-                con_matrix = pd.concat([con_matrix, pd.Series(contrast_dict, name=contrast_name)])
+                df = pd.DataFrame([contrast_dict], columns=design_matrix.columns, index=[contrast_name])
+                con_weight_series.append(df)
 
+            # Concatenate series
+            con_matrix = pd.concat(con_weight_series)
             con_matrix = con_matrix.fillna(0)
+
             print(f'\t\t\t size of design matrix: {design_matrix.shape} & contrast matrix: {con_matrix.shape}')
             series_eff = pd.DataFrame(
                 np.hstack((model, run, eff_estimator(np.array(design_matrix), np.array(con_matrix)))
                           ).reshape(1, -1),
                 columns=[np.hstack(('model', 'run', list(contrast_weights.keys())))]
             )
-            comb_eff = pd.concat([comb_eff, series_eff])
+            comb_eff = pd.concat([comb_eff, series_eff],ignore_index=True)
             eff_out_path = f'{scratch_out}/{subj}_ses-{ses}_task-{task}_run-{run}_efficiency.tsv'
             comb_eff.to_csv(eff_out_path, index=False)
             print('\t\t 4/5 Mask Image, Fit GLM model ar1 autocorrelation')
