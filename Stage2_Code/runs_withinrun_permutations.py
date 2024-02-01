@@ -147,7 +147,6 @@ for run in runs:
         if exclude_subject:
             print("{} aCompCor ROI flag excluded for model {}, {}, {}".format(subj, fwhm, motion, model))
         else:
-            sys.exit(f"{subj} not excluded, continuing. Logging as exit for testing purposes")
             count = count + 1
             print('\t\t {}. Running model using: {}, {}, {}'.format(count, fwhm, motion, model))
             print('\t\t 1/5 Load Files & set paths')
