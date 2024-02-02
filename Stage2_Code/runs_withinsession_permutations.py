@@ -132,14 +132,14 @@ else:
 
 count = 0
 for fwhm, motion, model in permutation_list:
+    count = count + 1
     exclude_subject = (
-            excl_subs[excl_subs[0] == subj][1].values == "1" and
+            (excl_subs[excl_subs[0] == subj][1].values == 1).any() and
             motion in ["opt3", "opt4"]
     )
     if exclude_subject:
-        print("{} aCompCor ROI flag excluded for model {}, {}, {}".format(subj, fwhm, motion, model))
+        print("\t\t {} aCompCor ROI flag excluded for model {}, {}, {}".format(subj, fwhm, motion, model))
     else:
-        count = count + 1
         print('\t\t {}. Running model using: {}, {}, {}'.format(count, fwhm, motion, model))
 
         mod_name = f'mask-{mask_label}_mot-{motion}_mod-{model}_fwhm-{fwhm}'

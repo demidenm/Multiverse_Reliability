@@ -150,7 +150,7 @@ for run in runs:
                 motion in ["opt3", "opt4"]
         )
         if exclude_subject:
-            print("{} aCompCor ROI flag excluded for model {}, {}, {}".format(subj, fwhm, motion, model))
+            print("\t\t {} aCompCor ROI flag excluded for model {}, {}, {}".format(subj, fwhm, motion, model))
         else:
             print('\t\t {}. Running model using: {}, {}, {}'.format(count, fwhm, motion, model))
             print('\t\t 1/5 Load Files & set paths')
