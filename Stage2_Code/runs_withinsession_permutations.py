@@ -22,7 +22,6 @@ def fixed_effect(subject: str, session: str, task_type: str,
     based on beta/variance values)
     Several path indices are hard coded, so should update as see fit
     e.g., '{sub}_ses-{ses}_task-{task}_effect-fixed_contrast-{c}_stat-effect.nii.gz'
-
     :param subject: string-Input subject label, BIDS leading label, e.g., sub-01
     :param session: string-Input session label, BIDS label e.g., ses-1
     :param task_type: string-Input task label, BIDS label e.g., mid
@@ -36,12 +35,11 @@ def fixed_effect(subject: str, session: str, task_type: str,
     :return: nothing return, files are saved
     """
     for contrast in contrast_list:
+        print(f"\t\t\t Creating weighted fix-eff model for contrast: {contrast}")
         betas = sorted(glob(f'{firstlvl_indir}/{subject}_ses-{session}_task-{task_type}_run-*_'
                             f'contrast-{contrast}_{model_permutation}_stat-beta.nii.gz'))
-
         var = sorted(glob(f'{firstlvl_indir}/{subject}_ses-{session}_task-{task_type}_run-*_'
                           f'contrast-{contrast}_{model_permutation}_stat-var.nii.gz'))
-
         # conpute_fixed_effects options
         # (1) contrast map of the effect across runs;
         # (2) var map of between runs effect;
@@ -52,12 +50,10 @@ def fixed_effect(subject: str, session: str, task_type: str,
         if not os.path.exists(fixedeffect_outdir):
             os.makedirs(fixedeffect_outdir)
             print("Directory created:", fixedeffect_outdir)
-
         if save_beta:
             fix_effect_out = f'{fixedeffect_outdir}/{subject}_ses-{session}_task-{task_type}_' \
                              f'contrast-{contrast}_{model_permutation}_stat-effect.nii.gz'
             fix_effect.to_filename(fix_effect_out)
-
         if save_var:
             fix_var_out = f'{fixedeffect_outdir}/{subject}_ses-{session}_task-{task_type}_' \
                           f'contrast-{contrast}_{model_permutation}_stat-var.nii.gz'
