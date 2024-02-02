@@ -144,14 +144,14 @@ for run in runs:
     comb_eff = pd.DataFrame(columns=[np.hstack(('model', 'run', list(contrast_weights.keys())))])
     count = 0
     for fwhm, motion, model in permutation_list:
+        count = count + 1
         exclude_subject = (
-                excl_subs[excl_subs[0] == subj][1].values == "1" and
+                (excl_subs[excl_subs[0] == subj][1].values == 1).any() and
                 motion in ["opt3", "opt4"]
         )
         if exclude_subject:
             print("{} aCompCor ROI flag excluded for model {}, {}, {}".format(subj, fwhm, motion, model))
         else:
-            count = count + 1
             print('\t\t {}. Running model using: {}, {}, {}'.format(count, fwhm, motion, model))
             print('\t\t 1/5 Load Files & set paths')
             # import behavior events .tsv from data path
