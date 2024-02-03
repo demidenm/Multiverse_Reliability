@@ -1,0 +1,20 @@
+#!/bin/bash -l
+#SBATCH -J first_abcd
+#SBATCH --array=0-137 # jobs
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=6
+#SBATCH --mem-per-cpu=6G
+#SBATCH -t 04:00:00
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=mdemiden@umn.edu
+#SBATCH -p msismall,agsmall#amdsmall #agsmall #update for UMN/sherlock
+#SBATCH -o log_abcd/%x_%A_%a.out #update for abcd/ahrb/mls
+#SBATCH -e log_abcd/%x_%A_%a.err #update for abcd/ahrb/mls
+#SBATCH -A faird #feczk001 # update for UMN/sherlock
+
+source $HOME/miniconda3/etc/profile.d/conda.sh
+conda activate fmri_env
+module load fsl
+ID=${SLURM_ARRAY_TASK_ID}
+bash ./batch_jobs/first${ID}

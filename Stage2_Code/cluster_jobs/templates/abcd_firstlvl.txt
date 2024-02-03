@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # define variables
-deriv_dir=s3://ABCD_BIDS/derivatives
 curr_dir=`pwd`
 ses=ses-SESSION
 ses_r=SESSION
@@ -11,7 +10,6 @@ n_vols=403
 tr_sec=.800
 stc_opt=False
 task=MID
-s3_bucket=${deriv_dir}/${fmriprep}
 beh_dat=${curr_dir}/../../../../../slurm_ABCD_s3/Beh_Data
 tmp_in=/tmp/processed
 mask_path=${curr_dir}/../brain_mask/MNI152NLin2009cAsym_res-02_desc-brain_mask.nii.gz
@@ -20,9 +18,18 @@ vol_info_file=${file_out}/vol_info.tsv
 firstlvl_fold=/scratch.global/${USER}/analyses_reliability/firstlvl/${ses}/${sub}
 fixeff_fold=/scratch.global/${USER}/analyses_reliability/fixedeff/${ses}/${sub}
 script_dir=${curr_dir}/..
+acompcor=ACOMPCOR
+
+if [[ "$ses_r" == "baselineYear1Arm1" ]] ; then
+	s3_bucket=s3://abcd-mriqc-fmriprep/derivatives/${fmriprep}
+elif [[ "$ses_r" == "2YearFollowUpYArm1" ]] ; then
+	s3_bucket=s3://ABCD_BIDS/derivatives/${fmriprep}
+else 
+	echo "wrong session option"
+	exit 1
+fi
 
 # copy data from beh ouput & s3, ignore unnecessary files
-
 echo "Copying ${task} files for $sub from beh folder & s3 bucket"
 mkdir -p ${tmp_in}/${sub}/${ses}/func/
 cp ${beh_dat}/events_to_tsv/${ses_r}_${task}/${sub}_${ses}_* ${tmp_in}/${sub}/${ses}/func
@@ -31,7 +38,7 @@ cp ${beh_dat}/tsv_to_html/${ses_r}_${task}/${sub}_${ses}_task-${task}_beh-descr.
 
 filenames=$(s3cmd ls ${s3_bucket}/${ses}/${sub}/${ses}/func/ \
                 | grep "${task}" \
-                | grep -vE "fsLR|goodvoxels|fsnative" \
+                | grep -vE "fsLR|goodvoxels|fsnative|.h5|.gii|nback|rest|SST" \
                 | awk '{ print $NF }')
 
 # Check if the array is empty or not
@@ -136,7 +143,7 @@ echo "sub: ${sub}"
 echo "data_preproc: ${tmp_in}"
 echo "analysis_out: ${firstlvl_fold}"
 
-python ${script_dir}/runs_withinrun_permutations.py --sample abcd --sub ${sub} --task ${task} --ses $ses_r --stc ${stc_opt} --numvols ${n_vols} --boldtr ${tr_sec} --beh_path ${tmp_in} --fmriprep_path ${tmp_in} --mask ${mask_path} --mask_label mni152 --output ${firstlvl_fold}
+python ${script_dir}/runs_withinrun_permutations.py --sample abcd --sub ${sub} --task ${task} --ses $ses_r --stc ${stc_opt} --numvols ${n_vols} --boldtr ${tr_sec} --beh_path ${tmp_in} --fmriprep_path ${tmp_in} --mask ${mask_path} --mask_label mni152 --output ${firstlvl_fold} --excl ${acompcor}
 firstlvl_error=$?
 
 if [ ${firstlvl_error} -eq 0 ]; then
@@ -160,7 +167,7 @@ echo "sub: ${sub}"
 echo "First lvl input: ${firstlvl_fold}"
 echo "Fixed scratch out: ${fixeff_fold}"
 
-python ${script_dir}/runs_withinsession_permutations.py --sample abcd --sub ${sub} --task ${task} --ses $ses_r --firstlvl_inp ${firstlvl_fold} --mask ${mask_path} --mask_label mni152 --output ${fixeff_fold}
+python ${script_dir}/runs_withinsession_permutations.py --sample abcd --sub ${sub} --task ${task} --ses $ses_r --firstlvl_inp ${firstlvl_fold} --mask ${mask_path} --mask_label mni152 --output ${fixeff_fold} --excl ${acompcor}
 fixeff_error=$?
 
 if [ ${fixeff_error} -eq 0 ]; then

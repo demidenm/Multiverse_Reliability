@@ -3,6 +3,7 @@ curr_dir=`pwd`
 script_dir=${curr_dir}/..
 sample=SAMPLE
 task=TASK
+run=RUN
 ses=SESSION
 type=TYPE
 model=MODEL
@@ -16,12 +17,20 @@ group_out=${group_dir}/${sample}_${type}
 
 [ ! -d ${group_scratch} ] && echo "group scratch directory exists" | mkdir -p ${group_scratch}
 [ ! -d ${group_out} ] && echo "group out directory exists" | mkdir -p ${group_out}
-[ ! -d ${tmp_dir} ] && echo "group out directory exists" | mkdir -p ${tmp_dir}
+[ ! -d ${tmp_dir}/inp ] && echo "group out directory exists" | mkdir -p ${tmp_dir}/inp
 
 # cp subjs to tmpdir
 cat ${sub_list} | while read line ; do 
-	cp -r ${fixed_in}/ses-${ses}/sub-${line}/sub-${line}_ses-${ses}_task-${task}_run-02_*_${model}_stat-beta.nii.gz ${tmp_dir}
-done 
+	sub=$(echo $line | awk -F" " '{ print $1 }' )
+	echo "sub: ${sub} and line ${line}"
+	if [ ${type} == 'session' ]; then
+		cp -r ${fixed_in}/ses-${ses}/${sub}/${sub}_ses-${ses}_task-${task}_*_${model}_stat-effect.nii.gz ${tmp_dir}/inp/
+	elif [ ${type} == 'run' ]; then
+		cp -r ${fixed_in}/ses-${ses}/${sub}/${sub}_ses-${ses}_task-${task}_run-0${run}*_${model}_stat-beta.nii.gz ${tmp_dir}/inp/
+	else
+		echo "Invalid type: $type"
+	fi
+done
 
 # run python script
 echo "Sample Type: ${sample}"
@@ -31,7 +40,7 @@ echo "Fixed lvl input: ${tmp_dir}"
 echo "Group scratch out: ${group_scratch}"
 echo "Group oak out: ${group_out}"
 
-python ${script_dir}/group_withinsession_permutations.py --sample ${sample} --task ${task} --ses ${ses} --type ${type}-02 --mask ${mask} --mask_label mni-152 --model ${model} --input ${tmp_dir} --output ${group_scratch}
+python ${script_dir}/group_withinsession_permutations.py --sample ${sample} --task ${task} --run ${run} --ses ${ses} --type ${type} --mask ${mask} --mask_label mni-152 --model ${model} --input ${tmp_dir}/inp --output ${group_scratch}
 grp_error=$?
 
 if [ ${grp_error} -eq 0 ]; then
@@ -44,5 +53,5 @@ fi
 echo "Syncing files from scratch to analysis path. Deleted from scratch once sync'd" 
 rsync -av --remove-source-files ${group_scratch}/ ${group_out}/
 
-rm -r ${tmp_dir}
-rm -r ${group_scratch}
+#rm -r ${tmp_dir}
+#rm -r ${group_scratch}
