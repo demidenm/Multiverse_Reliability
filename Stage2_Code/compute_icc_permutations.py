@@ -15,7 +15,8 @@ parser = argparse.ArgumentParser(description="Script to run first level task mod
 parser.add_argument("--sample", help="sample type, ahrb, abcd or mls?")
 parser.add_argument("--ses", help="session, include the session type without prefix, e.g., 1, 01, baselinearm1")
 parser.add_argument("--type", help="between runs or sessions, e.g., run, session")
-parser.add_argument("--model", help="model permutation, e.g. contrast-Sgain-Neut_mask-mni152_mot-opt5_mod-FixMod_fwhm-6.0")
+parser.add_argument("--model", help="model permutation, "
+                                    "e.g. contrast-Sgain-Neut_mask-mni152_mot-opt5_mod-FixMod_fwhm-6.0")
 parser.add_argument("--task", help="task mid, MID, or reward")
 parser.add_argument("--mask", help="path the to a binarized brain mask (e.g., MNI152 or "
                                    "constrained mask in MNI space, spec-network, or None")
@@ -80,6 +81,7 @@ else:
     print("incorrect reliability type provided. Options run and session")
 
 
+print(f"Running ICC(3,1) on {len(set1)} subjects")
 brain_models = brain_icc.voxelwise_icc(multisession_list = [set1, set2],
                                         mask=mask, icc_type='icc_3')
 
