@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #SBATCH -J group_abcd
-#SBATCH --array=59 # jobs
+#SBATCH --array=0-89 #59 or 89 # jobs
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=4

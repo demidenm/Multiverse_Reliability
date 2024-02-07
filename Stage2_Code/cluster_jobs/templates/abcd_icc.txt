@@ -12,7 +12,31 @@ type=TYPE
 mask_path=${curr_dir}/../brain_mask/MNI152_${mask_label}.nii.gz
 inp_fold=INPFOLD
 out_fold=/scratch.global/${USER}/analyses_reliability/icc_perm/${type}
+subj_ids=SUBJ_IDS
 script_dir=${curr_dir}/..
+
+# move subjects from list to temp
+dat_in="${inp_fold/\/scratch.local\///scratch.global/}"
+
+if [ ${type} == 'session' ]; then
+	cat ${subj_ids} | while read subj ; do
+		sub=$(echo $subj | awk -F" " '{ print $1}' )
+        	for sess in baselineYear1Arm1 2YearFollowUpArm1 ; do
+                	mkdir -p ${inp_fold}/ses-${sess}/${sub}
+                	cp ${dat_in}/ses-${sess}/${sub}/*${model}* ${inp_fold}/ses-${sess}/${sub}/
+        	done
+	done
+elif [ ${type} == 'run' ]; then
+	cat ${subj_ids} | while read subj ; do
+        	sub=$(echo $subj | awk -F" " '{ print $1}' )
+       		for sess in ${ses} ; do
+                	mkdir -p ${inp_fold}/ses-${sess}/${sub}
+                	cp ${dat_in}/ses-${sess}/${sub}/*${model}* ${inp_fold}/ses-${sess}/${sub}/
+        	done
+	done
+else
+                echo "Invalid type: $type"
+fi
 
 echo "#### Starting ICC estimation ####" 
 
@@ -26,7 +50,7 @@ echo "model: ${model}"
 echo "Inp: ${inp_fold}"
 echo "Out: ${out_fold}"
 
-python ${script_dir}/compute_icc_permutations.py --sample abcd --ses ${ses} --type ${type} --model ${model} --mask ${mask_path} --mask_label ${mask_label} --inp_path ${inp_fold} --output ${out_fold}
+python ${script_dir}/compute_icc_permutations.py --sample abcd --task ${task} --ses ${ses} --type ${type} --model ${model} --mask ${mask_path} --mask_label ${mask_label} --inp_path ${inp_fold} --output ${out_fold}
 icc_error=$?
 
 if [ ${icc_error} -eq 0 ]; then

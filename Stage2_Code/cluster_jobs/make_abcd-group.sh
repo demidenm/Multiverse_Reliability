@@ -7,7 +7,7 @@ run=1 # 1, 2 or None (no need for leading 0, added in code
 ses=baselineYear1Arm1 # baselineYear1Arm1 or 2YearFollowUpArm1 for ABCD
 type=session # run or session
 subj_list=${1}
-outfold=/scratch.global/${USER}/analyses_reliability/group
+outfold=/scratch.global/${USER}/analyses_reliability/group_all
 
 if [ -z "$1" ]; then
         echo
@@ -32,7 +32,7 @@ elif [[ $sample == 'mls' ]]; then
     fwhm_opt=(3.6 4.8 6.0 7.2 8.4)
 fi
 
-motion_opt=("opt1" "opt2" "opt3" "opt4") # "opt5")
+motion_opt=("opt1" "opt2" "opt3" "opt4" "opt5" "opt6")
 modtype_opt=("CueMod" "AntMod" "FixMod")
 
 # Start loop to create ICC batch jobs
