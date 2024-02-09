@@ -10,11 +10,20 @@ model=MODEL
 mask_label=MASKLABEL
 # session or run
 type=TYPE
-mask_path=${curr_dir}/../brain_mask/MNI152_${mask_label}.nii.gz
 inp_fold=INPFOLD
-out_fold=OUTFOLD/${type}/${mask_label}
-scratch=SCRATCH/icc-${type}/${mask_label}/${model}
 script_dir=${curr_dir}/..
+
+if [[ $mask_label == "wilson-sub" || $mask_label == "wilson-supra" ]]; then  
+        echo "Setting mask label"
+        mask_path=${curr_dir}/../brain_mask/MNI152_${mask_label}.nii.gz
+        out_fold=OUTFOLD/${type}/${mask_label}
+	scratch=SCRATCH/icc-${type}/${mask_lbael}/${model}
+else
+    	echo "No mask being used, set to None"
+        mask_path=None
+        out_fold=OUTFOLD/${type}
+	scratch=SCRATCH/icc-${type}/${model}
+fi
 
 echo "#### Starting ICC estimation ####" 
 
@@ -30,8 +39,13 @@ echo "Inp: ${inp_fold}"
 echo "Out: ${out_fold}"
 echo "Scratch: ${scratch}"
 
-python ${script_dir}/compute_icc_permutations.py --sample ${sample} --ses ${ses} --task ${task} --type ${type} --model ${model} --mask ${mask_path} --mask_label ${mask_label} --inp_path ${inp_fold} --output ${scratch}
-icc_error=$?
+if [[ $mask_label == "None" ]]; then
+	python ${script_dir}/compute_icc_permutations.py --sample ${sample} --task ${task} --ses ${ses} --type ${type} --model ${model} --inp_path ${inp_fold} --output ${scratch}
+	icc_error=$?
+else
+	python ${script_dir}/compute_icc_permutations.py --sample ${sample} --task ${task} --ses ${ses} --type ${type} --model ${model} --mask ${mask_path} --mask_label ${mask_label} --inp_path ${inp_fold} --output ${scratch}
+	icc_error=$?
+fi
 
 if [ ${icc_error} -eq 0 ]; then
         echo "Python ICC permutation ${model} completed successfully!"
