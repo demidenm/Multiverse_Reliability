@@ -21,7 +21,8 @@ parser.add_argument("--task", help="task mid, MID, or reward")
 parser.add_argument("--mask", help="path the to a binarized brain mask (e.g., MNI152 or "
                                    "constrained mask in MNI space, spec-network; default None",
                     default=None)
-parser.add_argument("--mask_label", help="label for mask, e.g. mni152, wilson-supra, wilson-sub, yeo-network; default None")
+parser.add_argument("--mask_label", help="label for mask, e.g. mni152, wilson-supra, wilson-sub, yeo-network; default None",
+                    default=None)
 parser.add_argument("--inp_path", help="Path to the output directory for the fmriprep output")
 parser.add_argument("--output", help="output folder where to write out and save information")
 args = parser.parse_args()
