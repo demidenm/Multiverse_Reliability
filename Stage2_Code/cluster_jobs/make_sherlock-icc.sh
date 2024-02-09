@@ -3,7 +3,7 @@
 sample=AHRB # abcd, AHRB, MLS
 task=mid # mid = AHRB, reward = MLS
 ses=1 # 1 or 2
-mask_label=wilson-supra # wilson-sub, wilson-supra
+mask_label=None # None, or wilson-sub, wilson-supra
 type=run # run or session
 outfold=/oak/stanford/groups/russpold/data/${sample}/derivatives/analyses/proj_reliability/icc_mods
 scratch=/scratch/groups/russpold/${USER}/${sample}
