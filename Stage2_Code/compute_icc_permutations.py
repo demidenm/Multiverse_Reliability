@@ -40,7 +40,7 @@ out_path = args.output
 
 
 # download neurovault mask if sub and suprathresh masks dont exist
-if not os.path.exists(mask):
+if not os.path.exists(mask) and mask_label is not None:
     mask_dir = os.path.dirname(mask)
     # Load the Wilson image
     wilson_img = datasets.fetch_neurovault_ids(image_ids=[68843])
