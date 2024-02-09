@@ -19,8 +19,9 @@ parser.add_argument("--model", help="model permutation, "
                                     "e.g. contrast-Sgain-Neut_mask-mni152_mot-opt5_mod-FixMod_fwhm-6.0")
 parser.add_argument("--task", help="task mid, MID, or reward")
 parser.add_argument("--mask", help="path the to a binarized brain mask (e.g., MNI152 or "
-                                   "constrained mask in MNI space, spec-network, or None")
-parser.add_argument("--mask_label", help="label for mask, e.g. mni152, wilson-supra, wilson-sub, yeo-network, or None")
+                                   "constrained mask in MNI space, spec-network; default None",
+                    default=None)
+parser.add_argument("--mask_label", help="label for mask, e.g. mni152, wilson-supra, wilson-sub, yeo-network; default None")
 parser.add_argument("--inp_path", help="Path to the output directory for the fmriprep output")
 parser.add_argument("--output", help="output folder where to write out and save information")
 args = parser.parse_args()
@@ -30,7 +31,7 @@ sample = args.sample
 ses = args.ses
 model = args.model
 task = args.task
-type = args.type
+comp_type = args.type
 mask = args.mask
 mask_label = args.mask_label
 inp_path = args.inp_path
@@ -64,7 +65,7 @@ if not os.path.exists(mask):
             output_path = f'{mask_dir}/MNI152_wilson-{thresh}.nii.gz'
             nib.save(thresh_mask_img, output_path)
 
-if 'run' == type:
+if 'run' == comp_type:
     set1 = sorted(glob(f'{inp_path}/ses-{ses}/**/*_ses-{ses}_task-{task}_run-01_{model}_stat-beta.nii.gz'))
     set2 = sorted(glob(f'{inp_path}/ses-{ses}/**/*_ses-{ses}_task-{task}_run-02_{model}_stat-beta.nii.gz'))
     assert len(set1) > 0 and len(set2) > 0, f'Length of set1 [{len(set1)}] and/or set2 [{len(set2)}] is zero.'
@@ -72,7 +73,7 @@ if 'run' == type:
     match_string_position = all(
         a.split('_')[1:3] == b.split('_')[1:3] and a.split('_')[5:] == b.split('_')[5:] for a, b in zip(set1, set2))
     assert match_string_position, "Values at path-positions 2:3 and 5: do not match."
-elif 'session' == type:
+elif 'session' == comp_type:
     session_list = os.listdir(inp_path)
     set1 = sorted(glob(f'{inp_path}/{session_list[0]}/**/*_{session_list[0]}_task-{task}_{model}_stat-effect.nii.gz'))
     set2 = sorted(glob(f'{inp_path}/{session_list[1]}/**/*_{session_list[1]}_task-{task}_{model}_stat-effect.nii.gz'))
@@ -86,5 +87,9 @@ brain_models = brain_icc.voxelwise_icc(multisession_list = [set1, set2],
                                         mask=mask, icc_type='icc_3')
 
 for img_type in ['est', 'msbtwn', 'mswthn']:
-    out_icc_path = f'{out_path}/subs-{len(set1)}_type-{type}_mask-{mask_label}_{model}_stat-{img_type}.nii.gz'
-    nib.save(brain_models[img_type], out_icc_path)
+    if mask_label is not None:
+        out_icc_path = f'{out_path}/subs-{len(set1)}_type-{comp_type}_mask-{mask_label}_{model}_stat-{img_type}.nii.gz'
+        nib.save(brain_models[img_type], out_icc_path)
+    else:
+        out_icc_path = f'{out_path}/subs-{len(set1)}_type-{comp_type}_{model}_stat-{img_type}.nii.gz'
+        nib.save(brain_models[img_type], out_icc_path)
