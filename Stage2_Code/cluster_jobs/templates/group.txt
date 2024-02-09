@@ -12,8 +12,8 @@ mask=${curr_dir}/../brain_mask/MNI152NLin2009cAsym_res-02_desc-brain_mask.nii.gz
 fixed_in=INPUT
 group_dir=OUTPUT
 tmp_dir=/tmp/${USER}/fixedeff/ses-${ses}
-group_scratch=/tmp/group/${sample}_${type}
-group_out=${group_dir}/${sample}_${type}
+group_scratch=/tmp/group/ses-${ses}/${type}
+group_out=${group_dir}/ses-${ses}/${type}
 
 [ ! -d ${group_scratch} ] && echo "group scratch directory exists" | mkdir -p ${group_scratch}
 [ ! -d ${group_out} ] && echo "group out directory exists" | mkdir -p ${group_out}

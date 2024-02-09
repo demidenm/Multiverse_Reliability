@@ -2,7 +2,7 @@
 
 sample=abcd # abcd, ahrb or mls
 ses=baselineYear1Arm1 # baselineYear1Arm1 or 2YearFollowUpArm1 for ABCD
-mask_label=wilson-sub # wilson-sub, wilson-supra
+mask_label=None # None, wilson-sub, wilson-supra
 type=run # run or session
 subj_ids=${1} # sub-IDs, move to temp to differentiate low/high motion mods
 

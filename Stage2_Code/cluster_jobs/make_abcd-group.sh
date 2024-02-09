@@ -3,9 +3,9 @@
 curr_dir=`pwd`
 sample=abcd # abcd, ahrb or mls
 task=MID
-run=1 # 1, 2 or None (no need for leading 0, added in code
+run=2 # 1, 2 or None (no need for leading 0, added in code
 ses=baselineYear1Arm1 # baselineYear1Arm1 or 2YearFollowUpArm1 for ABCD
-type=session # run or session
+type=run # run or session
 subj_list=${1}
 outfold=/scratch.global/${USER}/analyses_reliability/group_all
 
