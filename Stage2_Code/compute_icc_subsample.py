@@ -51,8 +51,8 @@ for subj_n in n_range:
     subsample_id = random.choices(sublist_clean, k=subj_n)
     print(f"Of the {len(subsample_id)} subject IDs, n = {len(set(subsample_id))} are unique")
 
-    set1 = [f'{inp_path}/ses-{ses}/{subj_id}_ses-{ses}_task-{task}_run-01_{model}_stat-beta.nii.gz' for subj_id in subsample_id]
-    set2 = [f'{inp_path}/ses-{ses}/{subj_id}_ses-{ses}_task-{task}_run-02_{model}_stat-beta.nii.gz' for subj_id in subsample_id]
+    set1 = [f'{inp_path}/ses-{ses}/{subj_id}/{subj_id}_ses-{ses}_task-{task}_run-01_{model}_stat-beta.nii.gz' for subj_id in subsample_id]
+    set2 = [f'{inp_path}/ses-{ses}/{subj_id}/{subj_id}_ses-{ses}_task-{task}_run-02_{model}_stat-beta.nii.gz' for subj_id in subsample_id]
 
     assert len(set1) > 0 and len(set2) > 0, f'Length of set1 [{len(set1)}] and/or set2 [{len(set2)}] is zero.'
     assert len(set1) == len(set2), f'Lengths of set1 [{len(set1)}] and set2 [{len(set2)}] are not equal.'
