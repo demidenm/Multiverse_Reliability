@@ -72,8 +72,8 @@ if 'run' == comp_type:
     assert len(set1) > 0 and len(set2) > 0, f'Length of set1 [{len(set1)}] and/or set2 [{len(set2)}] is zero.'
     assert len(set1) == len(set2), f'Lengths of set1 [{len(set1)}] and set2 [{len(set2)}] are not equal.'
     match_string_position = all(
-        a.split('_')[1:3] == b.split('_')[1:3] and a.split('_')[5:] == b.split('_')[5:] for a, b in zip(set1, set2))
-    assert match_string_position, "Values at path-positions 2:3 and 5: do not match."
+        a.split('_')[0:3] == b.split('_')[0:3] and a.split('_')[5:] == b.split('_')[5:] for a, b in zip(set1, set2))
+    assert match_string_position, "Values at path-positions 0:3 and 5: do not match. Subjects may be misaligned."
 elif 'session' == comp_type:
     session_list = os.listdir(inp_path)
     set1 = sorted(glob(f'{inp_path}/{session_list[0]}/**/*_{session_list[0]}_task-{task}_{model}_stat-effect.nii.gz'))
