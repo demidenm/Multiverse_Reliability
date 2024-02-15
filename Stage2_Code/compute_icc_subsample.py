@@ -27,13 +27,13 @@ args = parser.parse_args()
 ses = args.ses
 task = args.task
 model = args.model
-min_n = args.min_n
-max_n = args.max_n
+min_n = int(args.min_n)
+max_n = int(args.max_n)
 subject_list = args.sub_list
 mask = args.mask
 inp_path = args.inp_path
 out_path = args.output
-seed = args.seed
+seed = int(args.seed)
 
 # read in subject list
 with open(subject_list, "r") as file:
