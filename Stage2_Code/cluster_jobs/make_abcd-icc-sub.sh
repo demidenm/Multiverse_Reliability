@@ -2,7 +2,7 @@
 
 ses=baselineYear1Arm1 # baselineYear1Arm1 or 2YearFollowUpArm1 for ABCD
 task=MID
-model=contrast-Lgain-Neut_mask-mni152_mot-opt2_mod-CueMod_fwhm-8.4
+model=contrast-Lgain-Base_mask-mni152_mot-opt2_mod-CueMod_fwhm-8.4
 min=25
 max=525
 subj_ids=${1} # sub-IDs, to subsample from to create set1 and set2 for ICC
