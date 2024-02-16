@@ -31,3 +31,6 @@ Stage2_Code/subj_id/
 Stage2_Code/.Rhistory
 Stage2_Code/cluster_jobs/first_sherlock.batch
 Stage2_Code/cluster_jobs/logs_mls/
+Stage2_Code/.ipynb_checkpoints/
+Stage2_Code/cluster_jobs/ex_submit_grp.txt
+Stage2_Code/cluster_jobs/logs/
