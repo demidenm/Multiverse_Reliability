@@ -67,8 +67,6 @@ parser.add_argument("--mask", help="path the to a binarized brain mask (e.g., MN
 parser.add_argument("--mask_label", help="label for mask, e.g. mni152, subtresh, suprathresh, yeo-network",
                     default=None)
 parser.add_argument("--output", help="output folder where to write out and save information")
-parser.add_argument("--excl", help="TSV file with Subjects Inclusion(0)+exclusion for acompcor=1=",
-                    default=None)
 
 
 args = parser.parse_args()
@@ -79,7 +77,7 @@ subj = args.sub
 task = args.task
 stc = args.stc
 ses = args.ses
-fwhm_opt = int(args.fwhm)
+fwhm_opt = float(args.fwhm)
 motion_opt = args.motion
 modtype_opt = args.modtype
 numvols = int(args.numvols)
