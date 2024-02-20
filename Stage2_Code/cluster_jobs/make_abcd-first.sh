@@ -1,9 +1,13 @@
 #!/bin/bash
 
 subj_ids=$1
-acomp_list=$1 # tsv file, no header, col1 = sub IDs w/ sub- prefix and col2 acompcor exclusion "1" non-exclusion "0"
+acomp_list=$2 # tsv file, no header, col1 = sub IDs w/ sub- prefix and col2 acompcor exclusion "1" non-exclusion "0"
 ses=baselineYear1Arm1
-out_dir=/scratch.global/${USER}/analyses_reliability
+out_dir=/scratch.global/${USER}/analyses_subsample
+analysis_type=single #MULTIVERSE # if running single model, change to "single"
+fwhm=8.4
+motion=opt2
+modtype=CueMod
 
 if [ -z "$1" ]; then
 	echo
@@ -12,13 +16,33 @@ if [ -z "$1" ]; then
 	exit 1
 fi
 
-n=0
-cat $subj_ids | while read line ; do
-	subj=$(echo $line | awk -F" " '{ print $1 }' | awk -F"-" '{ print $2 }')
-	sed -e "s|SUBJECT|${subj}|g; s|SESSION|${ses}|g; s|OUTPUT|${out_dir}|g; s|ACOMPCOR|${acomp_list}|g;" ./templates/abcd_firstlvl.txt > ./batch_jobs/first${n}
-	n=$((n+1))
+if [ "$analysis_type" == "MULTIVERSE" ]; then
+	n=0
+	cat $subj_ids | while read line ; do
+		subj=$(echo $line | awk -F" " '{ print $1 }' | awk -F"-" '{ print $2 }')
+		sed -e "s|SUBJECT|${subj}|g; \
+			s|SESSION|${ses}|g; \
+			s|OUTPUT|${out_dir}|g; \
+			s|ANALYSIS_TYPE|${analysis_type}|g; \
+			s|ACOMPCOR|${acomp_list}|g;" ./templates/abcd_firstlvl.txt > ./batch_jobs/first${n}
+		n=$((n+1))
 
-done
+	done
+else
+	n=0
+        cat $subj_ids | while read line ; do
+                subj=$(echo $line | awk -F" " '{ print $1 }' | awk -F"-" '{ print $2 }')
+                sed -e "s|SUBJECT|${subj}|g; \
+                        s|SESSION|${ses}|g; \
+                        s|OUTPUT|${out_dir}|g; \
+			s|ANALYSIS_TYPE|${analysis_type}|g; \
+			s|FWHM|${fwhm}|g; \
+			s|MOTION|${motion}|g; \
+			s|MODTYPE|${modtype}|g; \
+                        s|ACOMPCOR|${acomp_list}|g;" ./templates/abcd_firstlvl.txt > ./batch_jobs/first${n}
+                n=$((n+1))
 
+        done
+fi
 chmod +x ./batch_jobs/first*
 

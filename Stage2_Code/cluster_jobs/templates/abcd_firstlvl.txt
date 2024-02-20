@@ -10,13 +10,17 @@ n_vols=403
 tr_sec=.800
 stc_opt=False
 task=MID
-beh_dat=${curr_dir}/../../../../../slurm_ABCD_s3/Beh_Data
+analysis_type=ANALYSIS_TYPE # If not MULTIVERSE, single model specify fwhm, motion, modtype
+fwhm=FWHM
+motion=MOTION
+modtype=MODTYPE
+beh_dat=${curr_dir}/../../../../slurm_ABCD_s3/Beh_Data
 tmp_in=/tmp/processed
 mask_path=${curr_dir}/../brain_mask/MNI152NLin2009cAsym_res-02_desc-brain_mask.nii.gz
-file_out=/scratch.global/${USER}/analyses_reliability
+file_out=OUTPUT
 vol_info_file=${file_out}/vol_info.tsv
-firstlvl_fold=/scratch.global/${USER}/analyses_reliability/firstlvl/${ses}/${sub}
-fixeff_fold=/scratch.global/${USER}/analyses_reliability/fixedeff/${ses}/${sub}
+firstlvl_fold=OUTPUT/firstlvl/${ses}/${sub}
+fixeff_fold=OUTPUT/fixedeff/${ses}/${sub}
 script_dir=${curr_dir}/..
 acompcor=ACOMPCOR
 
@@ -143,8 +147,41 @@ echo "sub: ${sub}"
 echo "data_preproc: ${tmp_in}"
 echo "analysis_out: ${firstlvl_fold}"
 
-python ${script_dir}/runs_withinrun_permutations.py --sample abcd --sub ${sub} --task ${task} --ses $ses_r --stc ${stc_opt} --numvols ${n_vols} --boldtr ${tr_sec} --beh_path ${tmp_in} --fmriprep_path ${tmp_in} --mask ${mask_path} --mask_label mni152 --output ${firstlvl_fold} --excl ${acompcor}
-firstlvl_error=$?
+if [ "$analysis_type" == "MULTIVERSE" ]; then
+	echo "	Running Multiverse Models"
+	python ${script_dir}/runs_withinrun_permutations.py --sample abcd \
+							--sub ${sub} \
+							--task ${task} \
+							--ses $ses_r \
+							--stc ${stc_opt} \
+							--numvols ${n_vols} \
+							--boldtr ${tr_sec} \
+							--beh_path ${tmp_in} \
+							--fmriprep_path ${tmp_in} \
+							--mask ${mask_path} \
+							--mask_label mni152 \
+							--output ${firstlvl_fold} \
+							--excl ${acompcor}
+	firstlvl_error=$?
+else
+        echo "  Running single model: FWHM ${fwhm} Parameterization ${modtype} Motion ${motion}"
+        python ${script_dir}/runs_withinrun_single.py --sample abcd \
+							--sub ${sub} \
+							--task ${task} \
+							--ses $ses_r \
+							--stc ${stc_opt} \
+							--numvols ${n_vols} \
+							--boldtr ${tr_sec} \
+							--fwhm ${fwhm} \
+							--motion ${motion} \
+							--modtype ${modtype} \
+                                                        --beh_path ${tmp_in} \
+                                                        --fmriprep_path ${tmp_in} \
+                                                        --mask ${mask_path} \
+                                                        --mask_label mni152 \
+                                                        --output ${firstlvl_fold}
+        firstlvl_error=$?
+fi	
 
 if [ ${firstlvl_error} -eq 0 ]; then
 	echo "Python first level completed successfully!"
@@ -154,25 +191,37 @@ else
 fi
 
 
-echo
-echo
-echo "#### Starting Precision Weighted Fixed Effect ####" 
 
-# Define directories
+if [ "$analysis_type" == "MULTIVERSE" ]; then
+	echo
+	echo
+	echo "#### Starting Precision Weighted Fixed Effect ####" 
 
-[ ! -d ${fixeff_fold} ] && echo "fixed out directory exists" | mkdir -p ${fixeff_fold} 
+	# Define directories
 
-# run python script
-echo "sub: ${sub}"
-echo "First lvl input: ${firstlvl_fold}"
-echo "Fixed scratch out: ${fixeff_fold}"
+	[ ! -d ${fixeff_fold} ] && echo "fixed out directory exists" | mkdir -p ${fixeff_fold} 
 
-python ${script_dir}/runs_withinsession_permutations.py --sample abcd --sub ${sub} --task ${task} --ses $ses_r --firstlvl_inp ${firstlvl_fold} --mask ${mask_path} --mask_label mni152 --output ${fixeff_fold} --excl ${acompcor}
-fixeff_error=$?
+	# run python script
+	echo "sub: ${sub}"
+	echo "First lvl input: ${firstlvl_fold}"
+	echo "Fixed scratch out: ${fixeff_fold}"
 
-if [ ${fixeff_error} -eq 0 ]; then
-        echo "Python fixed effect completed successfully!"
+	python ${script_dir}/runs_withinsession_permutations.py --sample abcd \
+								--sub ${sub} \
+								--task ${task} \
+								--ses $ses_r \
+								--firstlvl_inp ${firstlvl_fold} \
+								--mask ${mask_path} \
+								--mask_label mni152 \
+								--output ${fixeff_fold} \
+								--excl ${acompcor}
+	fixeff_error=$?
+	if [ ${fixeff_error} -eq 0 ]; then
+        	echo "Python fixed effect completed successfully!"
+	else
+        	echo "Python first effect failed."
+       		exit 1
+	fi
 else
-        echo "Python first effect failed."
-        exit 1
+        "Single run model, fixed effect not ran"
 fi
