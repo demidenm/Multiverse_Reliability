@@ -105,8 +105,12 @@ calculate_summary_stats <- function(data, variable, est_type) {
       "median" = median({{variable}}),
       "sd" = sd({{variable}}),
       "min" = min({{variable}}),
-      "max" = max({{variable}})
-    )
+      "max" = max({{variable}}) 
+    ) %>% 
+  kbl(format = "html", 
+      booktabs = TRUE) %>% 
+  kable_styling(full_width = FALSE)
+  
 }
 ```
 
@@ -141,24 +145,36 @@ Aim1: *For each study, the coefficients are plotted to reflect the distribution 
 ## ABCD
 ```{r include=FALSE}
 # ICC
-abcd_icc_subthresh <- read.csv("output/sample-abcd_type-run_stats-est_mask-wilson-sub.tsv", sep = '\t')
+abcd_icc_subthresh <- read.csv("./output/sample-abcd_type-run_stats-est_mask-wilson-sub.tsv", sep = '\t')
 abcd_icc_subthresh$study <- "abcd"
-abcd_icc_suprathresh <- read.csv("output/sample-abcd_type-run_stats-est_mask-wilson-supra.tsv", sep = '\t')
+abcd_icc_suprathresh <- read.csv("./output/sample-abcd_type-run_stats-est_mask-wilson-supra.tsv", sep = '\t')
 abcd_icc_suprathresh$study <- "abcd"
 # MSBS
-abcd_bs_subthresh <- read.csv("output/sample-abcd_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
+abcd_bs_subthresh <- read.csv("./output/sample-abcd_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
 abcd_bs_subthresh$study <- "abcd"
-abcd_bs_suprathresh <- read.csv("output/sample-abcd_type-run_stats-bs_mask-wilson-supra.tsv", sep = '\t')
+abcd_bs_suprathresh <- read.csv("./output/sample-abcd_type-run_stats-bs_mask-wilson-supra.tsv", sep = '\t')
 abcd_bs_suprathresh$study <- "abcd"
 # MSWS
-abcd_ws_subthresh <- read.csv("output/sample-abcd_type-run_stats-ws_mask-wilson-sub.tsv", sep = '\t')
+abcd_ws_subthresh <- read.csv("./output/sample-abcd_type-run_stats-ws_mask-wilson-sub.tsv", sep = '\t')
 abcd_ws_subthresh$study <- "abcd"
-abcd_ws_suprathresh <- read.csv("output/sample-abcd_type-run_stats-ws_mask-wilson-supra.tsv", sep = '\t')
+abcd_ws_suprathresh <- read.csv("./output/sample-abcd_type-run_stats-ws_mask-wilson-supra.tsv", sep = '\t')
 abcd_ws_suprathresh$study <- "abcd"
 
 # similarity
-abcd_similarity <- read.csv("output/sample-abcd_type-run_stats-similarity.tsv", sep = '\t')
+abcd_similarity <- read.csv("./output/sample-abcd_type-run_stats-similarity.tsv", sep = '\t')
 abcd_similarity$study <- "abcd"
+
+# smoothness
+abcd_smooth = read.csv("./output/ABCD_ses-baselineYear1Arm1_SmoothEstimates.csv", sep=',')
+abcd_smooth$sample = "ABCD"
+
+# efficiency 
+abcd_eff <- read.csv("../../ProgressDetails/Aim1c_Reliability/Stage2/output/ABCD/sample-abcd_ses-baselineYear1Arm1_stats-efficiency.tsv", sep = '\t')
+abcd_eff$study <- "abcd"
+
+# permutations of icc
+abcd_icc_subsamp = read.csv("./output/sample-abcd_ses-baselineYear1Arm1_type-bootsrap_stats-icc.tsv", sep="\t")
+
 ```
 
 ## AHRB 
@@ -166,57 +182,65 @@ abcd_similarity$study <- "abcd"
 
 ```{r include=FALSE}
 # ICC
-ahrb_icc_subthresh <- read.csv("output/sample-AHRB_type-run_stats-est_mask-wilson-sub.tsv", sep = '\t')
+ahrb_icc_subthresh <- read.csv("./output/sample-AHRB_type-run_stats-est_mask-wilson-sub.tsv", sep = '\t')
 ahrb_icc_subthresh$study <- "ahrb"
-ahrb_icc_suprathresh <- read.csv("output/sample-AHRB_type-run_stats-est_mask-wilson-supra.tsv", sep = '\t')
+ahrb_icc_suprathresh <- read.csv("./output/sample-AHRB_type-run_stats-est_mask-wilson-supra.tsv", sep = '\t')
 ahrb_icc_suprathresh$study <- "ahrb"
 # MSBS
-ahrb_bs_subthresh <- read.csv("output/sample-AHRB_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
+ahrb_bs_subthresh <- read.csv("./output/sample-AHRB_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
 ahrb_bs_subthresh$study <- "ahrb"
-ahrb_bs_suprathresh <- read.csv("output/sample-AHRB_type-run_stats-bs_mask-wilson-supra.tsv", sep = '\t')
+ahrb_bs_suprathresh <- read.csv("./output/sample-AHRB_type-run_stats-bs_mask-wilson-supra.tsv", sep = '\t')
 ahrb_bs_suprathresh$study <- "ahrb"
 # MSWS
-ahrb_ws_subthresh <- read.csv("output/sample-AHRB_type-run_stats-ws_mask-wilson-sub.tsv", sep = '\t')
+ahrb_ws_subthresh <- read.csv("./output/sample-AHRB_type-run_stats-ws_mask-wilson-sub.tsv", sep = '\t')
 ahrb_ws_subthresh$study <- "ahrb"
-ahrb_ws_suprathresh <- read.csv("output/sample-AHRB_type-run_stats-ws_mask-wilson-supra.tsv", sep = '\t')
+ahrb_ws_suprathresh <- read.csv("./output/sample-AHRB_type-run_stats-ws_mask-wilson-supra.tsv", sep = '\t')
 ahrb_ws_suprathresh$study <- "ahrb"
 # similarity
-ahrb_similarity <- read.csv("output/sample-AHRB_type-run_stats-similarity.tsv", sep = '\t')
+ahrb_similarity <- read.csv("./output/sample-AHRB_type-run_stats-similarity.tsv", sep = '\t')
 ahrb_similarity$study <- "ahrb"
+
+# smoothness
+ahrb_smooth = read.csv("./output/AHRB_ses-1_SmoothEstimates.csv", sep=',')
+ahrb_smooth$sample = "AHRB"
+
+# efficiency 
+ahrb_eff <- read.csv("output/sample-AHRB_ses-1_stats-efficiency.tsv", sep = '\t')
+ahrb_eff$study <- "ahrb"
 ```
 
 ## MLS 
 
 ```{r include=FALSE}
 # ICC
-mls_icc_subthresh <- read.csv("output/sample-MLS_type-run_stats-est_mask-wilson-sub.tsv", sep = '\t')
+mls_icc_subthresh <- read.csv("./output/sample-MLS_type-run_stats-est_mask-wilson-sub.tsv", sep = '\t')
 mls_icc_subthresh$study <- "mls"
 mls_icc_subthresh <- update_mls_fwhm(mls_icc_subthresh)
 
-mls_icc_suprathresh <- read.csv("output/sample-MLS_type-run_stats-est_mask-wilson-supra.tsv", sep = '\t')
+mls_icc_suprathresh <- read.csv("./output/sample-MLS_type-run_stats-est_mask-wilson-supra.tsv", sep = '\t')
 mls_icc_suprathresh$study <- "mls"
 mls_icc_suprathresh <- update_mls_fwhm(mls_icc_suprathresh)
 
 # MSBS
-mls_bs_subthresh <- read.csv("output/sample-MLS_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
+mls_bs_subthresh <- read.csv("./output/sample-MLS_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
 mls_bs_subthresh$study <- "mls"
 mls_bs_subthresh <- update_mls_fwhm(mls_bs_subthresh)
 
-mls_bs_suprathresh <- read.csv("output/sample-MLS_type-run_stats-bs_mask-wilson-supra.tsv", sep = '\t')
+mls_bs_suprathresh <- read.csv("./output/sample-MLS_type-run_stats-bs_mask-wilson-supra.tsv", sep = '\t')
 mls_bs_suprathresh$study <- "mls"
 mls_bs_suprathresh <- update_mls_fwhm(mls_bs_suprathresh)
 
 # MSWS
-mls_ws_subthresh <- read.csv("output/sample-MLS_type-run_stats-ws_mask-wilson-sub.tsv", sep = '\t')
+mls_ws_subthresh <- read.csv("./output/sample-MLS_type-run_stats-ws_mask-wilson-sub.tsv", sep = '\t')
 mls_ws_subthresh$study <- "mls"
 mls_ws_subthresh <- update_mls_fwhm(mls_ws_subthresh)
 
-mls_ws_suprathresh <- read.csv("output/sample-MLS_type-run_stats-ws_mask-wilson-supra.tsv", sep = '\t')
+mls_ws_suprathresh <- read.csv("./output/sample-MLS_type-run_stats-ws_mask-wilson-supra.tsv", sep = '\t')
 mls_ws_suprathresh$study <- "mls"
 mls_ws_suprathresh <- update_mls_fwhm(mls_ws_suprathresh)
 
 # similarity
-mls_similarity <- read.csv("output/sample-MLS_type-run_stats-similarity.tsv", sep = '\t')
+mls_similarity <- read.csv("./output/sample-MLS_type-run_stats-similarity.tsv", sep = '\t')
 mls_similarity$study <- "mls"
 mls_similarity <- mls_similarity %>%
     mutate(fwhm = case_when(
@@ -227,6 +251,14 @@ mls_similarity <- mls_similarity %>%
       fwhm == 7 ~ 8.4,
       TRUE ~ fwhm)  # if none of the conditions match, keep the original value
     )
+
+# smoothness
+mls_smooth = read.csv("./output/MLS_ses-1_SmoothEstimates.csv", sep=',')
+mls_smooth$sample = "MLS"
+
+# efficiency 
+mls_eff <- read.csv("./output/sample-MLS_ses-1_stats-efficiency.tsv", sep = '\t')
+mls_eff$study <- "mls"
 ```
 
 ## combine data
@@ -289,16 +321,95 @@ ws_suprathresh <-  ws_suprathresh %>% mutate(
   mutate(con = gsub("-", "", con))
 
 # similarity
-similarity_df <- rbind(ahrb_similarity, mls_similarity)
+similarity_df <- rbind(abcd_similarity,ahrb_similarity, mls_similarity)
 similarity_df <-  similarity_df %>% 
   mutate(con = gsub("-", "", con))
 similarity_df$fwhm <- as.character(similarity_df$fwhm)
 
+# smoothnesss
+comb_smooth = rbind(ahrb_smooth,mls_smooth,abcd_smooth)
+
+# effiiency
+efficiency_df <- rbind(abcd_eff,ahrb_eff,mls_eff)
+
 # remove excess files
-rm(ahrb_bs_subthresh, ahrb_bs_suprathresh, ahrb_icc_subthresh, ahrb_icc_suprathresh, ahrb_ws_subthresh, ahrb_ws_suprathresh,ahrb_similarity,
-   abcd_bs_subthresh, abcd_bs_suprathresh, abcd_icc_subthresh, abcd_icc_suprathresh, abcd_ws_subthresh, abcd_ws_suprathresh,abcd_similarity,
-   mls_bs_subthresh, mls_bs_suprathresh, mls_icc_subthresh, mls_icc_suprathresh, mls_ws_subthresh, mls_ws_suprathresh,mls_similarity)
+rm(ahrb_bs_subthresh, ahrb_bs_suprathresh, ahrb_icc_subthresh, ahrb_icc_suprathresh, ahrb_ws_subthresh, ahrb_ws_suprathresh,ahrb_similarity, ahrb_smooth,ahrb_eff,
+   abcd_bs_subthresh, abcd_bs_suprathresh, abcd_icc_subthresh, abcd_icc_suprathresh, abcd_ws_subthresh, abcd_ws_suprathresh,abcd_similarity, abcd_smooth, abcd_eff,
+   mls_bs_subthresh, mls_bs_suprathresh, mls_icc_subthresh, mls_icc_suprathresh, mls_ws_subthresh, mls_ws_suprathresh,mls_similarity, mls_smooth,mls_eff)
 ```
+
+# Smoothing + T to D {.tabset}
+
+## Inherent Smoothing
+
+```{r}
+smoothing_x = c(1.5,2,2.5,3,3.5)
+(smoothing_x*4)
+cat((smoothing_x*.5)*4)
+```
+
+reporting the smoothness density across 240 group lvl model residual variance maps for ABCD, AHRB and MLS. Five smoothing kernels were used `r cat(smoothing_x)`x voxel-size in 2.4mm for abcd/ahrb, resulting in `r cat(smoothing_x*2.4)` smoothness for ABCD/AHRB and a weight of `.50` was used for MLS 4mm voxel-size resulting in smoothness multiples of `rcat((smoothing_x*.5)*4)`.
+
+SmoothEstimate from FSL was used and Rsel^(1/3) is reported as it is "avg FWHM" based on: https://www.jiscmail.ac.uk/cgi-bin/webadmin?A2=FSL;e792b5da.0803
+```{r fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+comb_smooth %>% 
+  mutate(FWHM_avg = RESEL^(1/3)) %>% 
+  ggplot(aes(x=FWHM_avg, fill = sample, colour = sample)) +
+  geom_density(alpha = .5) +
+  xlab("Avg FWHM") +
+  xlim(0,10)+
+  ylim(0,.5)+
+  scale_fill_manual(values = pal) +  
+  scale_colour_manual(values = pal) +
+  theme_minimal()
+```
+
+```{r}
+comb_smooth %>% 
+  group_by(sample) %>% 
+  summarise(mean = mean(RESEL^(1/3)), sd = sd(RESEL^(1/3))) %>% 
+  kbl(format = "html", 
+      booktabs = TRUE) %>% 
+  kable_styling(full_width = FALSE)
+```
+
+## t-stat to cohen's d
+
+```{r}
+n_range = seq(5, 200, 1)
+result_df <- data.frame(n = numeric(0), 
+                        t_stat = numeric(0), cohen_d = numeric(0))
+for (n in n_range) {
+  set.seed(123)
+  n <- n
+  population_mean <- 0
+  mean <- 5
+  sd <- 1
+  
+  # Generate random samples from a t-distribution
+  df <- rnorm(n, mean = mean, sd = sd)
+  
+  
+  # Perform a one-sample t-test
+  t_test_result <- t.test(df, mu = population_mean)
+  t_stat = t_test_result$statistic 
+  cohens_d = t_test_result$statistic / sqrt(n)
+  result_df <- rbind(result_df, data.frame(n = n, t_stat = t_stat, cohen_d = cohens_d))
+}
+
+
+result_df %>% 
+  ggplot(aes(x = n)) +
+  geom_line(aes(y = t_stat, color = "T-statistic"), size = .5) +
+  geom_line(aes(y = cohen_d, color = "Cohen's d"), size = .5) +
+  labs(caption = "Cohen's d = t-stat / sqrt(n)",
+       x = "Sample Size (n)",
+       y = "Value") +
+  scale_color_manual(values = c("T-statistic" = "black", "Cohen's d" = "red")) +
+  theme_minimal()
+
+```
+
 
 # Plot distributions {.tabset}
 
@@ -670,6 +781,69 @@ cohens_sim %>% ggplot(aes(x = model, y = spearman, fill = model, color = model))
         plot.title = element_text(size = 16))
 ```
 
+## Model Effieincy, ses-1
+
+```{r warning=FALSE}
+efficiency_df %>% ggplot(aes(x = model, y = eff_est, fill = model, color = model)) +
+  geom_rain(alpha = .5, rain.side = 'l',
+            boxplot.args = list(color = "black", outlier.shape = NA),
+            boxplot.args.pos = list(
+              position = ggpp::position_dodgenudge(x = .2), width = 0.1
+            )) +
+  facet_grid(~study) +
+  theme_classic() +
+  ggtitle("Distribution by Model category") +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  guides(fill = 'none', color = 'none') +
+  theme(text = element_text(family = "Times New Roman"),
+        axis.text = element_text(size = 10, angle = 45, hjust = 1),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        plot.title = element_text(size = 16))
+
+efficiency_df %>% ggplot(aes(x = con, y = eff_est, fill = con, color = con)) +
+  geom_rain(alpha = .5, rain.side = 'l',
+            boxplot.args = list(color = "black", outlier.shape = NA),
+            boxplot.args.pos = list(
+              position = ggpp::position_dodgenudge(x = .2), width = 0.1
+            )) +
+  facet_grid(~study) +
+  theme_classic() +
+  ggtitle("Distribution by Contrast category") +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  guides(fill = 'none', color = 'none') +
+  theme(text = element_text(family = "Times New Roman"),
+        axis.text = element_text(size = 10, angle = 45, hjust = 1),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        plot.title = element_text(size = 16))
+
+efficiency_df %>% ggplot(aes(x = motion, y = eff_est, fill = motion, color = motion)) +
+  geom_rain(alpha = .5, rain.side = 'l',
+            boxplot.args = list(color = "black", outlier.shape = NA),
+            boxplot.args.pos = list(
+              position = ggpp::position_dodgenudge(x = .2), width = 0.1
+            )) +
+  facet_grid(~study) +
+  theme_classic() +
+  ggtitle("Distribution by Motion category") +
+  scale_fill_manual(values = pal) +
+  scale_color_manual(values = pal) +
+  guides(fill = 'none', color = 'none') +
+  theme(text = element_text(family = "Times New Roman"),
+        axis.text = element_text(size = 10, angle = 45, hjust = 1),
+        axis.title = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        plot.title = element_text(size = 16))
+
+
+```
+
 # Med/Min/Max Across Models {.tabset}
 `
 
@@ -729,7 +903,7 @@ df_summ <- icc_suprathresh %>%
   separate(col = model_type, into = c("fwhm","motion","contrast","model"), sep = "_|-", remove = FALSE)
 
 # plot
-est_label = "supra-threshod ICC"
+est_label = "supra-threshold ICC"
 create_specr_plot(df_summ, est_label)
 ```
 
@@ -1032,4 +1206,171 @@ df_summ_subset = df_summ %>%
 # subset plots
 est_label = "Spearman"
 create_specr_plot(df_summ_subset, est_label)
+```
+
+
+# ICC parameter subsampling {.tabset}
+
+```{r}
+icc_subsamp_lg <- abcd_icc_subsamp %>%
+  gather(key, value, starts_with(c("icc_", "msbtwn_", "mswthn_"))) %>%
+  separate(key, into = c("variable", "mask"), sep = "_") %>%
+  spread(variable, value)
+
+```
+
+```{r}
+n_range = seq(25,525,50)
+```
+
+## ICC
+
+```{r}
+icc_summary <- icc_subsamp_lg %>%
+  group_by(mask,subsample_n) %>%
+  summarize(mean_icc = mean(icc),
+            lower_ci = quantile(icc, 0.025),
+            upper_ci = quantile(icc, 0.975))
+
+ggplot() +
+  # add individual lines of ICC fo subsample_n + add mean
+  geom_path(data = icc_subsamp_lg, aes(x = subsample_n, y = icc, group = as.factor(seed)),
+            alpha = 0.1) +  # Use geom_path to connect individual points
+  geom_line(data = icc_summary, aes(x = subsample_n, y = mean_icc), alpha = .5) + 
+  # create ribbon + 95CI upper/lower
+  geom_ribbon(data = icc_summary, aes(x = subsample_n, ymin = lower_ci, ymax = upper_ci), 
+              alpha = 0.1) +  
+  geom_line(data = icc_summary, aes(x = subsample_n, y = lower_ci), linetype = "dashed", color = "red") +
+  geom_line(data = icc_summary, aes(x = subsample_n, y = upper_ci), linetype = "dashed", color = "red") +  
+  labs(title = "Individual points, Mean & +/-95% CI of ICC point estimate across 100 bootstraps at each N", 
+       subtitle = paste0("N=25 (Max:", 
+                        round(max(icc_subsamp_lg %>% filter(subsample_n == 25) %>% pull(icc)), 2),
+                        " Min:", 
+                        round(min(icc_subsamp_lg %>% filter(subsample_n == 25) %>% pull(icc)), 2),
+                        ") N=525 (Max:", 
+                        round(max(icc_subsamp_lg %>% filter(subsample_n == 525) %>% pull(icc)), 2),
+                        " Min:", 
+                        round(min(icc_subsamp_lg %>% filter(subsample_n == 525) %>% pull(icc)), 2)
+                        ,")"),
+       caption = paste("N range:",
+                       paste(n_range, collapse = ", "),
+                       "\n100 random iterations per N"),
+       x = "", y = "Median ICC") +
+  ylim(0, 0.75) +
+  facet_wrap(~ mask) +
+  theme_minimal()
+```
+```{r}
+icc_supra <- icc_subsamp_lg %>%
+  filter(mask=="supra") %>% 
+  group_by(subsample_n) %>%
+  summarize(mean_icc = mean(icc),
+            lower_ci = quantile(icc, 0.025),
+            upper_ci = quantile(icc, 0.975))
+
+icc_supra_lg = icc_subsamp_lg %>% 
+  filter(mask=="supra")
+
+ggplot() +
+  # add individual lines of ICC fo subsample_n + add mean
+  geom_path(data = icc_supra_lg, aes(x = subsample_n, y = icc, group = as.factor(seed)),
+            alpha = 0.1) +  # Use geom_path to connect individual points
+  geom_line(data = icc_supra, aes(x = subsample_n, y = mean_icc), alpha = .5) + 
+  # create ribbon + 95CI upper/lower
+  geom_ribbon(data = icc_supra, aes(x = subsample_n, ymin = lower_ci, ymax = upper_ci), 
+              alpha = 0.1) +  
+  geom_line(data = icc_supra, aes(x = subsample_n, y = lower_ci), linetype = "dashed", color = "red") +
+  geom_line(data = icc_supra, aes(x = subsample_n, y = upper_ci), linetype = "dashed", color = "red") +  
+  labs(title = "Individual points, Mean & +/-95% CI of ICC point estimate across 100 bootstraps at each N", 
+       subtitle = paste0("N=25 (Max:", 
+                        round(max(icc_supra_lg %>% filter(subsample_n == 25) %>% pull(icc)), 2),
+                        " Min:", 
+                        round(min(icc_supra_lg %>% filter(subsample_n == 25) %>% pull(icc)), 2),
+                        ") N=525 (Max:", 
+                        round(max(icc_supra_lg %>% filter(subsample_n == 525) %>% pull(icc)), 2),
+                        " Min:", 
+                        round(min(icc_supra_lg %>% filter(subsample_n == 525) %>% pull(icc)), 2)
+                        ,")"),
+       caption = paste("N range:",
+                       paste(n_range, collapse = ", "),
+                       "\n100 random iterations per N"),
+       x = "", y = "Median ICC") +
+  ylim(0, 0.75) +
+  theme_minimal()
+```
+
+## MSBW
+
+```{r}
+msbs_summary <- icc_subsamp_lg %>%
+  group_by(mask,subsample_n) %>%
+  summarize(mean_msbthn = mean(msbtwn),
+            lower_ci = quantile(msbtwn, 0.025),
+            upper_ci = quantile(msbtwn, 0.975))
+
+ggplot() +
+  # add individual lines of ICC fo subsample_n + add mean
+  geom_path(data = icc_subsamp_lg, aes(x = subsample_n, y = msbtwn, group = as.factor(seed)),
+            alpha = 0.1) +  # Use geom_path to connect individual points
+  geom_line(data = msbs_summary, aes(x = subsample_n, y = mean_msbthn), alpha = .5) + 
+  # create ribbon + 95CI upper/lower
+  geom_ribbon(data = msbs_summary, aes(x = subsample_n, ymin = lower_ci, ymax = upper_ci), 
+              alpha = 0.1) +  
+  geom_line(data = msbs_summary, aes(x = subsample_n, y = lower_ci), linetype = "dashed", color = "red") +
+  geom_line(data = msbs_summary, aes(x = subsample_n, y = upper_ci), linetype = "dashed", color = "red") +  
+  labs(title = "Individual points, Mean & +/-95% CI of MSBS point estimate across 100 bootstraps at each N", 
+       subtitle = paste0("N=25 (Max:", 
+                        round(max(icc_subsamp_lg %>% filter(subsample_n == 25) %>% pull(msbtwn)), 2),
+                        " Min:", 
+                        round(min(icc_subsamp_lg %>% filter(subsample_n == 25) %>% pull(msbtwn)), 2),
+                        ") N=525 (Max:", 
+                        round(max(icc_subsamp_lg %>% filter(subsample_n == 525) %>% pull(msbtwn)), 2),
+                        " Min:", 
+                        round(min(icc_subsamp_lg %>% filter(subsample_n == 525) %>% pull(msbtwn)), 2)
+                        ,")"),
+       caption = paste("N range:",
+                       paste(n_range, collapse = ", "),
+                       "\n100 random iterations per N"),
+       x = "", y = "Median MSBS") +
+  ylim(0, 2) +
+  facet_wrap(~ mask) +
+  theme_minimal()
+```
+
+## MSWS
+
+```{r}
+msws_summary <- icc_subsamp_lg %>%
+  group_by(mask,subsample_n) %>%
+  summarize(mean_mswthn = mean(mswthn),
+            lower_ci = quantile(mswthn, 0.025),
+            upper_ci = quantile(mswthn, 0.975))
+
+ggplot() +
+  # add individual lines of ICC fo subsample_n + add mean
+  geom_path(data = icc_subsamp_lg, aes(x = subsample_n, y = mswthn, group = as.factor(seed)),
+            alpha = 0.1) +  # Use geom_path to connect individual points
+  geom_line(data = msws_summary, aes(x = subsample_n, y = mean_mswthn), alpha = .5) + 
+  # create ribbon + 95CI upper/lower
+  geom_ribbon(data = msws_summary, aes(x = subsample_n, ymin = lower_ci, ymax = upper_ci), 
+              alpha = 0.1) +  
+  geom_line(data = msws_summary, aes(x = subsample_n, y = lower_ci), linetype = "dashed", color = "red") +
+  geom_line(data = msws_summary, aes(x = subsample_n, y = upper_ci), linetype = "dashed", color = "red") +  
+  labs(title = "Individual points, Mean & +/-95% CI of MSWS point estimate across 100 bootstraps at each N", 
+       subtitle = paste0("N=25 (Max:", 
+                        round(max(icc_subsamp_lg %>% filter(subsample_n == 25) %>% pull(msbtwn)), 2),
+                        " Min:", 
+                        round(min(icc_subsamp_lg %>% filter(subsample_n == 25) %>% pull(msbtwn)), 2),
+                        ") N=525 (Max:", 
+                        round(max(icc_subsamp_lg %>% filter(subsample_n == 525) %>% pull(msbtwn)), 2),
+                        " Min:", 
+                        round(min(icc_subsamp_lg %>% filter(subsample_n == 525) %>% pull(msbtwn)), 2)
+                        ,")"),
+       caption = paste("N range:",
+                       paste(n_range, collapse = ", "),
+                       "\n100 random iterations per N"),
+       x = "", y = "Median MSWS") +
+  ylim(0, 2) +
+  facet_wrap(~ mask) +
+  theme_minimal()
 ```
