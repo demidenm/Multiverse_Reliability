@@ -20,7 +20,8 @@ task = 'monetary incentive delay task'
 with open(nv_token, 'r') as file:
     # get token info
     token_info = file.read()
-
+    
+api = Client(nv_token.strip())
 collection_name = api.create_collection(f'{sample}: 3D MNI152 maps for multiverse reliability')
 
 with open(img_paths, 'r') as img_paths:
