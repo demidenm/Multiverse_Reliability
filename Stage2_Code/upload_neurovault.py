@@ -35,7 +35,7 @@ with open(img_paths, 'r') as file:
             if part.startswith('subs-'):
                 subs = part.split('-')[1]
         image_name = f'{est_type}: {img_basename}'
-        image = api.add_image(collection_name['id'], img_path, name=image_name, map_type='Other',
+        image = api.add_image(collection_name['id'], clean_path, name=image_name, map_type='Other',
                               modality='fMRI-BOLD', analysis='G', sample_size={subs},
                               target_template_image='GenericMNI', type_design='event_related',
                               cognitive_paradigm_cogatlas=task)
