@@ -38,4 +38,4 @@ with open(img_paths, 'r') as file:
         image = api.add_image(collection_name['id'], clean_path, name=image_name, map_type='Other',
                               modality='fMRI-BOLD', analysis='G', sample_size={subs},
                               target_template_image='GenericMNI', type_design='event_related',
-                              cognitive_paradigm_cogatlas=task)
+                              task_paradigm=task)
