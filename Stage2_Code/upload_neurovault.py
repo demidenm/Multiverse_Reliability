@@ -26,7 +26,7 @@ collection_name = api.create_collection(f'{sample}: 3D MNI152 maps for multivers
 
 with open(img_paths, 'r') as img_paths:
     for img_path in img_paths:
-        clean_path = img_path.strip()
+        clean_path = img_path.strip().replace('\n', '')
         img_basename = os.path.basename(clean_path)
         file_details = img_basename.split('_')
         subs = None
