@@ -24,9 +24,9 @@ with open(nv_token, 'r') as file:
 api = Client(token_info.strip())
 collection_name = api.create_collection(f'{sample}: 3D MNI152 maps for multiverse reliability')
 
-with open(img_paths, 'r') as img_paths:
-    for img_path in img_paths:
-        clean_path = img_path.strip().replace('\n', '')
+with open(img_paths, 'r') as file:
+    for img_path in file:
+        clean_path = img_path.strip()
         img_basename = os.path.basename(clean_path)
         file_details = img_basename.split('_')
         subs = None
