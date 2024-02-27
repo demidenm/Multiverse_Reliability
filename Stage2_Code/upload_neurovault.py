@@ -14,7 +14,9 @@ nv_token = args.token
 sample = args.sample
 grp_paths = args.group_files
 icc_paths = args.icc_files
-task = 'monetary incentive delay task'
+# cog atlsa monetary incentive delay task
+task = 'trm_4f23fc8c42d28'
+task_name = 'monetary incentive delay task'
 
 # Run code
 with open(nv_token, 'r') as file:
@@ -40,7 +42,7 @@ with open(grp_paths, 'r') as file:
         image = api.add_image(collection_name['id'], clean_path, name=image_name, map_type='Other',
                               modality='fMRI-BOLD', analysis='G', sample_size={subs},
                               target_template_image='GenericMNI', type_design='event_related',
-                              task_paradigm=task)
+                              cognitive_paradigm_cogatlas_id=task, task_paradigm=task_name, estimate_type=est_type)
 
 # Add ICC images
 with open(icc_paths, 'r') as file:
@@ -58,5 +60,5 @@ with open(icc_paths, 'r') as file:
         image = api.add_image(collection_name['id'], clean_path, name=image_name, map_type='Other',
                               modality='fMRI-BOLD', analysis='G', sample_size={subs},
                               target_template_image='GenericMNI', type_design='event_related',
-                              task_paradigm=task)
+                              cognitive_paradigm_cogatlas_id=task, task_paradigm=task_name, estimate_type=est_type)
 
