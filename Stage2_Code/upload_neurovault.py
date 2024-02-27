@@ -29,6 +29,7 @@ collection_name = api.create_collection(f'{sample}: MNI152 3D maps for Multivers
 # add group images
 with open(grp_paths, 'r') as file:
     est_type = 'Group'
+    est = 'cohens_d'
     for img_path in file:
         clean_path = img_path.strip()
         img_basename = os.path.basename(clean_path)
@@ -42,7 +43,7 @@ with open(grp_paths, 'r') as file:
         image = api.add_image(collection_name['id'], clean_path, name=image_name, map_type='Other',
                               modality='fMRI-BOLD', analysis='G', sample_size={subs},
                               target_template_image='GenericMNI', type_design='event_related',
-                              cognitive_paradigm_cogatlas_id=task, task_paradigm=task_name, estimate_type=est_type)
+                              cognitive_paradigm_cogatlas=task, task_paradigm=task_name, estimate_type=est)
 
 # Add ICC images
 with open(icc_paths, 'r') as file:
@@ -52,13 +53,16 @@ with open(icc_paths, 'r') as file:
         img_basename = os.path.basename(clean_path)
         file_details = img_basename.split('_')
         subs = None
+        stat = None
         # Loop through each part of the path
         for part in file_details:
             if part.startswith('subs-'):
                 subs = part.split('-')[1]
-        image_name = f'{est_type}: {img_basename}'
+            if part.startswith('stat-')[1]:
+                stat = part.split('-')[1]
+            image_name = f'{est_type}: {img_basename}'
         image = api.add_image(collection_name['id'], clean_path, name=image_name, map_type='Other',
                               modality='fMRI-BOLD', analysis='G', sample_size={subs},
                               target_template_image='GenericMNI', type_design='event_related',
-                              cognitive_paradigm_cogatlas_id=task, task_paradigm=task_name, estimate_type=est_type)
+                              cognitive_paradigm_cogatlas=task, task_paradigm=task_name, estimate_type=stat)
 
