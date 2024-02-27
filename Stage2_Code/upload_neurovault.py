@@ -58,7 +58,7 @@ with open(icc_paths, 'r') as file:
         for part in file_details:
             if part.startswith('subs-'):
                 subs = part.split('-')[1]
-            if part.startswith('stat-')[1]:
+            if part.startswith('stat-'):
                 stat = part.split('-')[1]
             image_name = f'{est_type}: {img_basename}'
         image = api.add_image(collection_name['id'], clean_path, name=image_name, map_type='Other',
