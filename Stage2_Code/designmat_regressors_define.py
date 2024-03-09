@@ -111,8 +111,9 @@ def pull_regressors(confound_path: str, regressor_type: str = 'opt1', sample: st
         # append the motion outlier columns to in dict to opt3  as opt5
         confound_dict['opt4'] = confound_dict['opt3'] + list(motion_outlier_columns.columns)
 
-    if sample == "MLS":
-        # Exclude 'cosine03' for sample "MLS", fmriprep does not generate this length
+    if 'cosine03' not in confound_df.columns:
+        # Exclude 'cosine03' for sample "MLS" (which never has it) or others dont have it
+        # fmriprep at times generates <4
         confound_dict[regressor_type].remove('cosine03')
 
     return pd.DataFrame(confound_df[confound_dict[regressor_type]])
