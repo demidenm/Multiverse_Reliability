@@ -71,7 +71,7 @@ with open(icc_paths, 'r') as file:
                               cognitive_paradigm_cogatlas=task, task_paradigm=task_name, estimate_type=stat)
 
 if subsample_paths is not None:
-    with open(icc_paths, 'r') as file:
+    with open(subsample_paths, 'r') as file:
         est_type = 'SubsampleICC'
         for img_path in file:
             clean_path = img_path.strip()
