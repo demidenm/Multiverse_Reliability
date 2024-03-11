@@ -30,7 +30,7 @@ dat_in="${inp_fold/\/scratch.local\///scratch.global/}"
 if [ ${type} == 'session' ]; then
 	cat ${subj_ids} | while read subj ; do
 		sub=$(echo $subj | awk -F" " '{ print $1}' )
-        	for sess in baselineYear1Arm1 2YearFollowUpArm1 ; do
+        	for sess in baselineYear1Arm1 2YearFollowUpYArm1 ; do
                 	mkdir -p ${inp_fold}/ses-${sess}/${sub}
                 	cp ${dat_in}/ses-${sess}/${sub}/*${model}* ${inp_fold}/ses-${sess}/${sub}/
         	done

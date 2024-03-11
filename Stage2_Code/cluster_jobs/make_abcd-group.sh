@@ -3,11 +3,12 @@
 curr_dir=`pwd`
 sample=abcd # abcd, ahrb or mls
 task=MID
-run=2 # 1, 2 or None (no need for leading 0, added in code
-ses=baselineYear1Arm1 # baselineYear1Arm1 or 2YearFollowUpArm1 for ABCD
-type=run # run or session
+run=1 # 1, 2 or None (no need for leading 0, added in code
+ses=baselineYear1Arm1 # baselineYear1Arm1 or 2YearFollowUpYArm1 for ABCD
+type=session # run or session
 subj_list=${1}
-outfold=/scratch.global/${USER}/analyses_reliability/group_all
+outfold=/scratch.global/${USER}/analyses_reliability/group_lowmotion
+counter_start=0 #0 or 60 to run run-1 & run-2 in batch
 
 if [ -z "$1" ]; then
         echo
@@ -32,11 +33,11 @@ elif [[ $sample == 'mls' ]]; then
     fwhm_opt=(3.6 4.8 6.0 7.2 8.4)
 fi
 
-motion_opt=("opt1" "opt2" "opt3" "opt4" "opt5" "opt6")
+motion_opt=("opt1" "opt2" "opt3" "opt4") # "opt5" "opt6")
 modtype_opt=("CueMod" "AntMod" "FixMod")
 
 # Start loop to create ICC batch jobs
-n=0
+n=${counter_start}
 for fwhm in ${fwhm_opt[@]} ; do
 	for motion in ${motion_opt[@]} ; do
 		for modtype in ${modtype_opt[@]} ; do
