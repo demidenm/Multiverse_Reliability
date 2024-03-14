@@ -25,14 +25,14 @@ subtitle: <h2><u>Reliability, fMRI, tasks </u></h2>
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 if (!require("pacman")) install.packages("pacman")
 
-pacman::p_load(tidyverse, ggplot2, knitr, kableExtra, ggpubr, lme4, sjPlot, specr, ggrain, neuRosim, emmeans, zoo, stringr)
+pacman::p_load(tidyverse, ggplot2, knitr, kableExtra, ggpubr, lme4, sjPlot, specr, ggrain, neuRosim, emmeans, zoo, stringr, patchwork)
 
-pal<- c("#1D91C0","#67001F","#CB181D","#78C679","#F46D43","#F7FCFD",
-                 "#A6CEE3","#FD8D3C","#A6D854","#D4B9DA","#6A51A3",
-                 "#7F0000","#D9D9D9","#FFF7BC","#000000","#F0F0F0",
-                 "#C7EAE5","#003C30","#F16913","#FFF7FB","#8C6BB1",
-                 "#C7E9B4","#762A83","#FC9272","#DF65B0","#EF3B2C",
-                 "#74C476","#E5F5F9","#AE017E","#F7F7F7")
+pal<- c("#1D91C0","#67001F","#CB181D","#78C679","#F46D43","#A6CEE3",
+        "#F7FCFD","#FD8D3C","#A6D854","#D4B9DA","#6A51A3",
+        "#7F0000","#D9D9D9","#FFF7BC","#000000","#F0F0F0",
+        "#C7EAE5","#003C30","#F16913","#FFF7FB","#8C6BB1",
+        "#C7E9B4","#762A83","#FC9272","#DF65B0","#EF3B2C",
+        "#74C476","#E5F5F9","#AE017E","#F7F7F7")
 
 
 session_info = sessionInfo()
@@ -49,28 +49,71 @@ Plotting function to reduce code length + simplify. Then, short function to plac
 - 7.0 --> 8.4
 
 ```{r}
-create_plot <- function(dataset, type, thresh) {
+create_plot <- function(dataset, y_est, type, thresh, y_min, y_max, add_title = TRUE) {
   plot <- dataset %>%
-    ggplot(aes(x = .data[[type]], y = median_est, fill = .data[[type]], color = .data[[type]])) +
+    ggplot(aes(x = .data[[type]], y = .data[[y_est]], fill = .data[[type]], color = .data[[type]])) +
     geom_rain(alpha = .5, rain.side = 'l',
               boxplot.args = list(color = "black", outlier.shape = NA),
               boxplot.args.pos = list(
                 position = ggpp::position_dodgenudge(x = .1), width = 0.1
               )) +
     facet_grid(~study) +
-    theme_classic() +
-    ggtitle(paste("Distribution by",type,"category (",thresh,"mask)")) +
+    ylab("Estimate") +
+    ylim(y_min,y_max)+
+    theme_classic() 
+  
+  if (add_title) {
+    plot <- plot + ggtitle(paste("Distribution by", type, "category (", thresh, "mask)"))
+  }
+  
+  plot <- plot +
     scale_fill_manual(values = pal) +
     scale_color_manual(values = pal) +
     guides(fill = 'none', color = 'none') +
     theme(text = element_text(family = "Times New Roman"),
-          axis.text = element_text(size = 10, angle = 45, hjust = 1),
-          axis.title = element_text(size = 10),
-          legend.text = element_text(size = 10),
-          legend.title = element_text(size = 10),
+          axis.text = element_text(size = 12, angle = 45, hjust = 1),
+          axis.title = element_text(size = 12),
+          legend.text = element_text(size = 12),
+          legend.title = element_text(size = 12),
           plot.title = element_text(size = 16))
+}
+
+by_sample_conmod <- function(dataset, y_est,y_min, y_max) {
   
-  return(plot)
+  # Define a function to create individual plots
+  create_plot <- function(data, study) {
+    ggplot(data, aes(x = con, y = .data[[y_est]], fill = con, color = con)) +
+      geom_rain(alpha = .5, rain.side = 'l',
+                boxplot.args = list(color = "black", outlier.shape = NA),
+                boxplot.args.pos = list(
+                  position = ggpp::position_dodgenudge(x = .1), width = 0.1
+                )) +
+      facet_grid(~model) +
+      ylab("Estimate") +
+      ylim(y_min,y_max)+
+      theme_classic() +
+      scale_fill_manual(values = pal) +
+      scale_color_manual(values = pal) +
+      guides(fill = 'none', color = 'none') +
+      theme(text = element_text(family = "Times New Roman"),
+            axis.text = element_text(size = 12, angle = 45, hjust = 1),
+            axis.title = element_text(size = 12),
+            legend.text = element_text(size = 12),
+            legend.title = element_text(size = 12),
+            plot.title = element_text(size = 16)) +
+      ggtitle(study) 
+  }
+  
+  # Create plots for each study using map
+  plot_list <- purrr::map(c("mls", "ahrb", "abcd"), ~ dataset %>%
+                            filter(study == .x) %>%
+                            create_plot(.x))
+  
+  # Combine plots into a single patchwork object
+  combined_plots <- wrap_plots(plotlist = plot_list)
+  
+  # Add patchwork annotations
+  combined_plots 
 }
 
 update_mls_fwhm <- function(df) {
@@ -103,6 +146,7 @@ calculate_summary_stats <- function(data, variable, est_type) {
     summarise(
       "est_type" = est_type,
       "median" = median({{variable}}),
+      "mean" = mean({{variable}}),
       "sd" = sd({{variable}}),
       "min" = min({{variable}}),
       "max" = max({{variable}}) 
@@ -149,6 +193,9 @@ abcd_icc_subthresh <- read.csv("./output/sample-abcd_type-run_stats-est_mask-wil
 abcd_icc_subthresh$study <- "abcd"
 abcd_icc_suprathresh <- read.csv("./output/sample-abcd_type-run_stats-est_mask-wilson-supra.tsv", sep = '\t')
 abcd_icc_suprathresh$study <- "abcd"
+abcd_icc_nacc <- read.csv("./output/sample-abcd_type-run_stats-est_mask-nacc.tsv", sep = '\t')
+abcd_icc_nacc$study <- "abcd"
+
 # MSBS
 abcd_bs_subthresh <- read.csv("./output/sample-abcd_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
 abcd_bs_subthresh$study <- "abcd"
@@ -186,6 +233,9 @@ ahrb_icc_subthresh <- read.csv("./output/sample-AHRB_type-run_stats-est_mask-wil
 ahrb_icc_subthresh$study <- "ahrb"
 ahrb_icc_suprathresh <- read.csv("./output/sample-AHRB_type-run_stats-est_mask-wilson-supra.tsv", sep = '\t')
 ahrb_icc_suprathresh$study <- "ahrb"
+ahrb_icc_nacc <- read.csv("./output/sample-AHRB_type-run_stats-est_mask-nacc.tsv", sep = '\t')
+ahrb_icc_nacc$study <- "ahrb"
+
 # MSBS
 ahrb_bs_subthresh <- read.csv("./output/sample-AHRB_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
 ahrb_bs_subthresh$study <- "ahrb"
@@ -220,6 +270,11 @@ mls_icc_subthresh <- update_mls_fwhm(mls_icc_subthresh)
 mls_icc_suprathresh <- read.csv("./output/sample-MLS_type-run_stats-est_mask-wilson-supra.tsv", sep = '\t')
 mls_icc_suprathresh$study <- "mls"
 mls_icc_suprathresh <- update_mls_fwhm(mls_icc_suprathresh)
+
+mls_icc_nacc <- read.csv("./output/sample-MLS_type-run_stats-est_mask-nacc.tsv", sep = '\t')
+mls_icc_nacc$study <- "mls"
+mls_icc_nacc <- update_mls_fwhm(mls_icc_nacc)
+
 
 # MSBS
 mls_bs_subthresh <- read.csv("./output/sample-MLS_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
@@ -283,6 +338,15 @@ icc_suprathresh <-  icc_suprathresh %>% mutate(
   ) %>% 
   mutate(con = gsub("-", "", con))
 
+icc_nacc <- rbind(abcd_icc_nacc, ahrb_icc_nacc, mls_icc_nacc)
+icc_nacc <-  icc_nacc %>% mutate(
+    con = gsub("contrast-", "", con),
+    motion = gsub("mot-", "", motion),
+    model = gsub("mod-", "", model),
+    fwhm = gsub("fwhm-", "", fwhm)
+  ) %>% 
+  mutate(con = gsub("-", "", con))
+
 
 # MSBS
 bs_subthresh <- rbind(abcd_bs_subthresh, ahrb_bs_subthresh, mls_bs_subthresh)
@@ -335,7 +399,7 @@ efficiency_df <- rbind(abcd_eff,ahrb_eff,mls_eff)
 # remove excess files
 rm(ahrb_bs_subthresh, ahrb_bs_suprathresh, ahrb_icc_subthresh, ahrb_icc_suprathresh, ahrb_ws_subthresh, ahrb_ws_suprathresh,ahrb_similarity, ahrb_smooth,ahrb_eff,
    abcd_bs_subthresh, abcd_bs_suprathresh, abcd_icc_subthresh, abcd_icc_suprathresh, abcd_ws_subthresh, abcd_ws_suprathresh,abcd_similarity, abcd_smooth, abcd_eff,
-   mls_bs_subthresh, mls_bs_suprathresh, mls_icc_subthresh, mls_icc_suprathresh, mls_ws_subthresh, mls_ws_suprathresh,mls_similarity, mls_smooth,mls_eff)
+   mls_bs_subthresh, mls_bs_suprathresh, mls_icc_subthresh, mls_icc_suprathresh, mls_ws_subthresh, mls_ws_suprathresh,mls_similarity, mls_smooth,mls_eff, mls_icc_nacc, ahrb_icc_nacc, abcd_icc_nacc)
 ```
 
 # Smoothing + T to D {.tabset}
@@ -423,32 +487,62 @@ Plotting overall and for each of [four] categories
 
 Creating rainclouds via [ggrain](https://cran.r-project.org/web/packages/ggrain/vignettes/ggrain.html)
 
-```{r}
-fwhm_rg = create_plot(icc_subthresh, "fwhm","sub-threshold")
-motion_rg = create_plot(icc_subthresh, "motion","sub-threshold")
-modeltype_rg = create_plot(icc_subthresh, "model","sub-threshold")
-contrast_rg = create_plot(icc_subthresh, "con","sub-threshold")
+```{r, fig.width=16, fig.height=10}
+subset <- by_sample_conmod(icc_subthresh, y_est = "median_est", y_min =-.1, y_max=.6)
+fwhm_rg = create_plot(icc_subthresh, y_est = "median_est", type = "fwhm",  thresh = "sub-threshold", y_min=-.1, y_max=.6, add_title=FALSE)
+motion_rg = create_plot(icc_subthresh, y_est = "median_est", type = "motion", thresh = "sub-threshold", y_min=-.1, y_max=.6, add_title=FALSE)
+modeltype_rg = create_plot(icc_subthresh, y_est = "median_est", type = "model", thresh = "sub-threshold",y_min=-.1, y_max=.6, add_title=FALSE)
+contrast_rg = create_plot(icc_subthresh, y_est = "median_est", type = "con", thresh = "sub-threshold", y_min=-.1, y_max=.6, add_title=FALSE)
 
-fwhm_rg
-motion_rg
-modeltype_rg
-contrast_rg
+cat("Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast for sub-threshold mask")
+(motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
+subset
 ```
 
 
 ### Suprathreshold Mask
 
 
-```{r}
-fwhm_rg = create_plot(icc_suprathresh, "fwhm","supra-threshold")
-motion_rg = create_plot(icc_suprathresh, "motion","supra-threshold")
-modeltype_rg = create_plot(icc_suprathresh, "model","supra-threshold")
-contrast_rg = create_plot(icc_suprathresh, "con","supra-threshold")
+```{r, fig.width=16, fig.height=10}
+subset <- by_sample_conmod(icc_suprathresh, y_est = "median_est", y_min=-.1, y_max=.6)
+fwhm_rg = create_plot(icc_suprathresh, y_est = "median_est", type = "fwhm",  thresh = "supra-threshold", y_min=-.1, y_max=.6, add_title=FALSE)
+motion_rg = create_plot(icc_suprathresh, y_est = "median_est", type = "motion", thresh = "supra-threshold", y_min=-.1, y_max=.6, add_title=FALSE)
+modeltype_rg = create_plot(icc_suprathresh, y_est = "median_est", type = "model", thresh = "supra-threshold",y_min=-.1, y_max=.6, add_title=FALSE)
+contrast_rg = create_plot(icc_suprathresh, y_est = "median_est", type = "con", thresh = "supra-threshold", y_min=-.1, y_max=.6, add_title=FALSE)
 
-fwhm_rg
-motion_rg
-modeltype_rg
-contrast_rg
+
+cat("Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast for supra-threshold mask")
+(motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
+subset
+```
+
+### Nacc avg Mask
+
+#### Right
+
+```{r, fig.width=16, fig.height=10}
+fwhm_rg = create_plot(icc_nacc, y_est = "avg_right", "fwhm","Avg Right NAcc", y_min=-.1, y_max=.6, add_title=FALSE)
+motion_rg = create_plot(icc_nacc, y_est = "avg_right", "motion","Avg Right NAcc", y_min=-.1, y_max=.6, add_title=FALSE)
+modeltype_rg = create_plot(icc_nacc, y_est = "avg_right", "model","Avg Right NAcc",y_min=-.1, y_max=.6, add_title=FALSE)
+contrast_rg = create_plot(icc_nacc, y_est = "avg_right", "con","sAvg Right NAcc", y_min=-.1, y_max=.6, add_title=FALSE)
+
+
+cat("Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast for Right NAcc")
+(motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
+```
+
+
+#### Left 
+
+```{r, fig.width=16, fig.height=10}
+fwhm_rg = create_plot(icc_nacc, y_est = "avg_left", "fwhm","Avg Left NAcc", y_min=-.1, y_max=.6, add_title=FALSE)
+motion_rg = create_plot(icc_nacc, y_est = "avg_left", "motion","Avg Left NAcc", y_min=-.1, y_max=.6, add_title=FALSE)
+modeltype_rg = create_plot(icc_nacc, y_est = "avg_left", "model","Avg Left NAcc",y_min=-.1, y_max=.6, add_title=FALSE)
+contrast_rg = create_plot(icc_nacc, y_est = "avg_left", "con","sAvg Left NAcc", y_min=-.1, y_max=.6, add_title=FALSE)
+
+
+cat("Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast for Left NAcc")
+(motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
 ```
 
 ## MSBS
@@ -457,30 +551,31 @@ Plotting overall and for each of [four] categories
 
 ### Subthreshold Mask
 
-```{r}
-fwhm_rg = create_plot(bs_subthresh, "fwhm","sub-threshold")
-motion_rg = create_plot(bs_subthresh, "motion","sub-threshold")
-modeltype_rg = create_plot(bs_subthresh, "model","sub-threshold")
-contrast_rg = create_plot(bs_subthresh, "con","sub-threshold")
+```{r, fig.width=16, fig.height=10}
+subset <- by_sample_conmod(bs_subthresh, y_est = "median_est", y_min=0, y_max=7)
+fwhm_rg = create_plot(bs_subthresh, y_est = "median_est", type = "fwhm",  thresh = "sub-threshold", y_min=0, y_max=7, add_title=FALSE)
+motion_rg = create_plot(bs_subthresh, y_est = "median_est", type = "motion", thresh = "sub-threshold", y_min=0, y_max=7, add_title=FALSE)
+modeltype_rg = create_plot(bs_subthresh, y_est = "median_est", type = "model", thresh = "sub-threshold",y_min=0, y_max=7, add_title=FALSE)
+contrast_rg = create_plot(bs_subthresh, y_est = "median_est", type = "con", thresh = "sub-threshold", y_min=0, y_max=7, add_title=FALSE)
 
-fwhm_rg
-motion_rg
-modeltype_rg
-contrast_rg
+cat("Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast for sub-threshold mask")
+(motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
+subset
 ```
 
 ### Suprathreshold Mask
 
-```{r}
-fwhm_rg = create_plot(bs_suprathresh, "fwhm","supra-threshold")
-motion_rg = create_plot(bs_suprathresh, "motion","supra-threshold")
-modeltype_rg = create_plot(bs_suprathresh, "model","supra-threshold")
-contrast_rg = create_plot(bs_suprathresh, "con","supra-threshold")
+```{r, fig.width=16, fig.height=10}
+subset <- by_sample_conmod(bs_suprathresh, y_est = "median_est", y_min=0, y_max=7)
+fwhm_rg = create_plot(bs_suprathresh, y_est = "median_est", type = "fwhm",  thresh = "supra-threshold", y_min=0, y_max=7, add_title=FALSE)
+motion_rg = create_plot(bs_suprathresh, y_est = "median_est", type = "motion", thresh = "supra-threshold", y_min=0, y_max=7, add_title=FALSE)
+modeltype_rg = create_plot(bs_suprathresh, y_est = "median_est", type = "model", thresh = "supra-threshold",y_min=0, y_max=7, add_title=FALSE)
+contrast_rg = create_plot(bs_suprathresh, y_est = "median_est", type = "con", thresh = "supra-threshold", y_min=0, y_max=7, add_title=FALSE)
 
-fwhm_rg
-motion_rg
-modeltype_rg
-contrast_rg
+
+cat("Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast for supra-threshold mask")
+(motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
+subset
 ```
 
 
@@ -490,29 +585,31 @@ Plotting overall and for each of [four] categories
 
 ### Subthreshold Mask
 
-```{r}
-fwhm_rg = create_plot(ws_subthresh, "fwhm","sub-threshold")
-motion_rg = create_plot(ws_subthresh, "motion","sub-threshold")
-modeltype_rg = create_plot(ws_subthresh, "model","sub-threshold")
-contrast_rg = create_plot(ws_subthresh, "con","sub-threshold")
+```{r, fig.width=16, fig.height=10}
+subset <- by_sample_conmod(ws_subthresh, y_est = "median_est", y_min=0, y_max=7)
+fwhm_rg = create_plot(ws_subthresh, y_est = "median_est", type = "fwhm",  thresh = "sub-threshold", y_min=0, y_max=7, add_title=FALSE)
+motion_rg = create_plot(ws_subthresh, y_est = "median_est", type = "motion", thresh = "sub-threshold", y_min=0, y_max=7, add_title=FALSE)
+modeltype_rg = create_plot(ws_subthresh, y_est = "median_est", type = "model", thresh = "sub-threshold",y_min=0, y_max=7, add_title=FALSE)
+contrast_rg = create_plot(ws_subthresh, y_est = "median_est", type = "con", thresh = "sub-threshold", y_min=0, y_max=7, add_title=FALSE)
 
-fwhm_rg
-motion_rg
-modeltype_rg
-contrast_rg
+cat("Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast for sub-threshold mask")
+(motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
+subset
 ```
 
 ### Suprathreshold Mask
 
-```{r}
-fwhm_rg = create_plot(ws_suprathresh, "fwhm","supra-threshold")
-motion_rg = create_plot(ws_suprathresh, "motion","supra-threshold")
-modeltype_rg = create_plot(ws_suprathresh, "model","supra-threshold")
-contrast_rg = create_plot(ws_suprathresh, "con","supra-threshold")
-fwhm_rg
-motion_rg
-modeltype_rg
-contrast_rg
+```{r, fig.width=16, fig.height=10}
+subset <- by_sample_conmod(ws_suprathresh, y_est = "median_est", y_min=0, y_max=7)
+fwhm_rg = create_plot(ws_suprathresh, y_est = "median_est", type = "fwhm",  thresh = "supra-threshold", y_min=0, y_max=7, add_title=FALSE)
+motion_rg = create_plot(ws_suprathresh, y_est = "median_est", type = "motion", thresh = "supra-threshold", y_min=0, y_max=7, add_title=FALSE)
+modeltype_rg = create_plot(ws_suprathresh, y_est = "median_est", type = "model", thresh = "supra-threshold",y_min=0, y_max=7, add_title=FALSE)
+contrast_rg = create_plot(ws_suprathresh, y_est = "median_est", type = "con", thresh = "supra-threshold", y_min=0, y_max=7, add_title=FALSE)
+
+
+cat("Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast for supra-threshold mask")
+(motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
+subset
 ```
 
 
@@ -520,179 +617,40 @@ contrast_rg
 
 ### jaccard
 
-```{r}
-fwhm_rg = similarity_df %>% ggplot(aes(x = fwhm, y = jaccard, fill = fwhm, color = fwhm)) +
-  geom_rain(alpha = .5, rain.side = 'l',
-            boxplot.args = list(color = "black", outlier.shape = NA),
-            boxplot.args.pos = list(
-              position = ggpp::position_dodgenudge(x = .1), width = 0.1
-            )) +
-  theme_classic() +
-  facet_grid(~study) +
-  ggtitle("Distribution by FWHN category  (Jaccard)") +
-  scale_fill_manual(values = pal) +
-  scale_color_manual(values = pal) +
-  guides(fill = 'none', color = 'none') +
-  theme(text = element_text(family = "Times New Roman"),
-        axis.text = element_text(size = 10),
-        axis.title = element_text(size = 10),
-        legend.text = element_text(size = 10),
-        legend.title = element_text(size = 10),
-        plot.title = element_text(size = 16))
+```{r, fig.width=16, fig.height=10}
+subset <- by_sample_conmod(similarity_df, y_est = "jaccard", y_min=0, y_max = 1)
+
+fwhm_rg = create_plot(similarity_df, y_est = "jaccard", type = "fwhm", thresh = "Jaccard", y_min=0, y_max = 1, add_title=FALSE)
+motion_rg = create_plot(similarity_df, y_est = "jaccard", type = "motion", thresh = "Jaccard", y_min=0, y_max = 1, add_title=FALSE)
+modeltype_rg = create_plot(similarity_df, y_est = "jaccard", type = "model", thresh="Jaccrd", y_min=0, y_max = 1, add_title=FALSE)
+contrast_rg = create_plot(similarity_df, y_est = "jaccard", type = "con", thresh = "Jaccard", y_min=0, y_max = 1, add_title=FALSE)
 
 
-motion_rg = similarity_df %>% ggplot(aes(x = motion, y = jaccard, fill = motion, color = motion)) +
-  geom_rain(alpha = .5, rain.side = 'l',
-            boxplot.args = list(color = "black", outlier.shape = NA),
-            boxplot.args.pos = list(
-              position = ggpp::position_dodgenudge(x = .1), width = 0.1
-            )) +
-  facet_grid(~study) +
-  theme_classic() +
-  ggtitle("Distribution by Motion category (Jaccard)") +
-  scale_fill_manual(values = pal) +
-  scale_color_manual(values = pal) +
-  guides(fill = 'none', color = 'none') +
-  theme(text = element_text(family = "Times New Roman"),
-        axis.text = element_text(size = 10),
-        axis.title = element_text(size = 10),
-        legend.text = element_text(size = 10),
-        legend.title = element_text(size = 10),
-        plot.title = element_text(size = 16))
-
-modeltype_rg = similarity_df %>% ggplot(aes(x = model, y = jaccard, fill = model, color = model)) +
-  geom_rain(alpha = .5, rain.side = 'l',
-            boxplot.args = list(color = "black", outlier.shape = NA),
-            boxplot.args.pos = list(
-              position = ggpp::position_dodgenudge(x = .1), width = 0.1
-            )) +
-  facet_grid(~study) +
-  theme_classic() +
-  ggtitle("Distribution by Model Type category  (Jaccard)") +
-  scale_fill_manual(values = pal) +
-  scale_color_manual(values = pal) +
-  guides(fill = 'none', color = 'none') +
-  theme(text = element_text(family = "Times New Roman"),
-        axis.text = element_text(size = 10),
-        axis.title = element_text(size = 10),
-        legend.text = element_text(size = 10),
-        legend.title = element_text(size = 10),
-        plot.title = element_text(size = 16))
-
-contrast_rg = similarity_df %>% ggplot(aes(x = con, y = jaccard, fill = con, color = con)) +
-  geom_rain(alpha = .5, rain.side = 'l',
-            boxplot.args = list(color = "black", outlier.shape = NA),
-            boxplot.args.pos = list(
-              position = ggpp::position_dodgenudge(x = .1), width = 0.1
-            )) +
-  facet_grid(~study) +
-  theme_classic() +
-  ggtitle("Distribution by Contrast category  (Jaccard)") +
-  scale_fill_manual(values = pal) +
-  scale_color_manual(values = pal) +
-  guides(fill = 'none', color = 'none') +
-  theme(text = element_text(family = "Times New Roman"),
-        axis.text = element_text(size = 10, angle = 45, hjust = 1),
-        axis.title = element_text(size = 10),
-        legend.text = element_text(size = 10),
-        legend.title = element_text(size = 10),
-        plot.title = element_text(size = 16))
-
-fwhm_rg
-motion_rg
-modeltype_rg
-contrast_rg
+cat("Jaccard: Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast")
+(motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
+subset
 ```
 
 ### spearman
 
-```{r}
-fwhm_rg = similarity_df %>% ggplot(aes(x = fwhm, y = spearman, fill = fwhm, color = fwhm)) +
-  geom_rain(alpha = .5, rain.side = 'l',
-            boxplot.args = list(color = "black", outlier.shape = NA),
-            boxplot.args.pos = list(
-              position = ggpp::position_dodgenudge(x = .1), width = 0.1
-            )) +
-  facet_grid(~study) +
-  theme_classic() +
-  ggtitle("Distribution by FWHN category  (spearman)") +
-  scale_fill_manual(values = pal) +
-  scale_color_manual(values = pal) +
-  guides(fill = 'none', color = 'none') +
-  theme(text = element_text(family = "Times New Roman"),
-        axis.text = element_text(size = 10),
-        axis.title = element_text(size = 10),
-        legend.text = element_text(size = 10),
-        legend.title = element_text(size = 10),
-        plot.title = element_text(size = 16))
+```{r, fig.width=16, fig.height=10}
+subset <- by_sample_conmod(similarity_df, y_est = "spearman", y_min=0, y_max = 1)
+
+fwhm_rg = create_plot(similarity_df, y_est = "spearman", type = "fwhm", thresh = "Spearman", y_min=0, y_max = 1, add_title=FALSE)
+motion_rg = create_plot(similarity_df, y_est = "spearman", type = "motion", thresh = "Spearman", y_min=0, y_max = 1, add_title=FALSE)
+modeltype_rg = create_plot(similarity_df, y_est = "spearman", type = "model", thresh="Spearman", y_min=0, y_max = 1, add_title=FALSE)
+contrast_rg = create_plot(similarity_df, y_est = "spearman", type = "con", thresh = "Spearman", y_min=0, y_max = 1, add_title=FALSE)
 
 
-motion_rg = similarity_df %>% ggplot(aes(x = motion, y = spearman, fill = motion, color = motion)) +
-  geom_rain(alpha = .5, rain.side = 'l',
-            boxplot.args = list(color = "black", outlier.shape = NA),
-            boxplot.args.pos = list(
-              position = ggpp::position_dodgenudge(x = .1), width = 0.1
-            )) +
-  facet_grid(~study) +
-  theme_classic() +
-  ggtitle("Distribution by Motion category (spearman)") +
-  scale_fill_manual(values = pal) +
-  scale_color_manual(values = pal) +
-  guides(fill = 'none', color = 'none') +
-  theme(text = element_text(family = "Times New Roman"),
-        axis.text = element_text(size = 10),
-        axis.title = element_text(size = 10),
-        legend.text = element_text(size = 10),
-        legend.title = element_text(size = 10),
-        plot.title = element_text(size = 16))
+cat("Spearman: Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast")
+(motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
+subset
 
-modeltype_rg = similarity_df %>% ggplot(aes(x = model, y = spearman, fill = model, color = model)) +
-  geom_rain(alpha = .5, rain.side = 'l',
-            boxplot.args = list(color = "black", outlier.shape = NA),
-            boxplot.args.pos = list(
-              position = ggpp::position_dodgenudge(x = .1), width = 0.1
-            )) +
-  facet_grid(~study) +
-  theme_classic() +
-  ggtitle("Distribution by Model Type category  (spearman)") +
-  scale_fill_manual(values = pal) +
-  scale_color_manual(values = pal) +
-  guides(fill = 'none', color = 'none') +
-  theme(text = element_text(family = "Times New Roman"),
-        axis.text = element_text(size = 10),
-        axis.title = element_text(size = 10),
-        legend.text = element_text(size = 10),
-        legend.title = element_text(size = 10),
-        plot.title = element_text(size = 16))
-
-contrast_rg = similarity_df %>% ggplot(aes(x = con, y = spearman, fill = con, color = con)) +
-  geom_rain(alpha = .5, rain.side = 'l',
-            boxplot.args = list(color = "black", outlier.shape = NA),
-            boxplot.args.pos = list(
-              position = ggpp::position_dodgenudge(x = .1), width = 0.1
-            )) +
-  facet_grid(~study) +
-  theme_classic() +
-  ggtitle("Distribution by Contrast category  (spearman)") +
-  scale_fill_manual(values = pal) +
-  scale_color_manual(values = pal) +
-  guides(fill = 'none', color = 'none') +
-  theme(text = element_text(family = "Times New Roman"),
-        axis.text = element_text(size = 10, angle = 45, hjust = 1),
-        axis.title = element_text(size = 10),
-        legend.text = element_text(size = 10),
-        legend.title = element_text(size = 10),
-        plot.title = element_text(size = 16))
-
-fwhm_rg
-motion_rg
-modeltype_rg
-contrast_rg
 ```
 
 ## Group Cohen's ~ ICC 
 
-```{r}
+```{r, fig.width=16, fig.height=10}
 cohens_sim <- gather(similarity_df, key = "Run", value = "spearman", run1_icc_cohensd:run2_icc_cohensd) %>% 
   mutate(Run = case_when(
     Run == "run1_icc_cohensd" ~ "Run1",
@@ -701,8 +659,14 @@ cohens_sim <- gather(similarity_df, key = "Run", value = "spearman", run1_icc_co
   ))
 ```
 
+```{r, fig.width=16, fig.height=10}
+cat("\tICC, MSBS and MSWS median, miniumum and maximum")
+calculate_summary_stats(similarity_df, run1_icc_cohensd, "ICC ~ R1 Cohen's D")
+calculate_summary_stats(similarity_df, run2_icc_cohensd, "ICC ~ R2 Cohen's D")
+```
 
-```{r}
+
+```{r, fig.width=16, fig.height=10}
 cohens_sim %>% ggplot(aes(x = fwhm, y = spearman, fill = fwhm, color = fwhm)) +
   geom_rain(alpha = .5, rain.side = 'l',
             boxplot.args = list(color = "black", outlier.shape = NA),
@@ -716,10 +680,10 @@ cohens_sim %>% ggplot(aes(x = fwhm, y = spearman, fill = fwhm, color = fwhm)) +
   scale_color_manual(values = pal) +
   guides(fill = 'none', color = 'none') +
   theme(text = element_text(family = "Times New Roman"),
-        axis.text = element_text(size = 10, angle = 45, hjust = 1),
-        axis.title = element_text(size = 10),
-        legend.text = element_text(size = 10),
-        legend.title = element_text(size = 10),
+        axis.text = element_text(size = 12, angle = 45, hjust = 1),
+        axis.title = element_text(size = 12),
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12),
         plot.title = element_text(size = 16))
 
 cohens_sim %>% ggplot(aes(x = con, y = spearman, fill = con, color = con)) +
@@ -735,10 +699,10 @@ cohens_sim %>% ggplot(aes(x = con, y = spearman, fill = con, color = con)) +
   scale_color_manual(values = pal) +
   guides(fill = 'none', color = 'none') +
   theme(text = element_text(family = "Times New Roman"),
-        axis.text = element_text(size = 10, angle = 45, hjust = 1),
-        axis.title = element_text(size = 10),
-        legend.text = element_text(size = 10),
-        legend.title = element_text(size = 10),
+        axis.text = element_text(size = 12, angle = 45, hjust = 1),
+        axis.title = element_text(size = 12),
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12),
         plot.title = element_text(size = 16))
 
 
@@ -755,10 +719,10 @@ cohens_sim %>% ggplot(aes(x = motion, y = spearman, fill = motion, color = motio
   scale_color_manual(values = pal) +
   guides(fill = 'none', color = 'none') +
   theme(text = element_text(family = "Times New Roman"),
-        axis.text = element_text(size = 10, angle = 45, hjust = 1),
-        axis.title = element_text(size = 10),
-        legend.text = element_text(size = 10),
-        legend.title = element_text(size = 10),
+        axis.text = element_text(size = 12, angle = 45, hjust = 1),
+        axis.title = element_text(size = 12),
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12),
         plot.title = element_text(size = 16))
 
 cohens_sim %>% ggplot(aes(x = model, y = spearman, fill = model, color = model)) +
@@ -774,74 +738,28 @@ cohens_sim %>% ggplot(aes(x = model, y = spearman, fill = model, color = model))
   scale_color_manual(values = pal) +
   guides(fill = 'none', color = 'none') +
   theme(text = element_text(family = "Times New Roman"),
-        axis.text = element_text(size = 10, angle = 45, hjust = 1),
-        axis.title = element_text(size = 10),
-        legend.text = element_text(size = 10),
-        legend.title = element_text(size = 10),
+        axis.text = element_text(size = 12, angle = 45, hjust = 1),
+        axis.title = element_text(size = 12),
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12),
         plot.title = element_text(size = 16))
+
+cat("Spearman: Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast")
+(motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
 ```
 
 ## Model Effieincy, ses-1
 
-```{r warning=FALSE}
-efficiency_df %>% ggplot(aes(x = model, y = eff_est, fill = model, color = model)) +
-  geom_rain(alpha = .5, rain.side = 'l',
-            boxplot.args = list(color = "black", outlier.shape = NA),
-            boxplot.args.pos = list(
-              position = ggpp::position_dodgenudge(x = .2), width = 0.1
-            )) +
-  facet_grid(~study) +
-  theme_classic() +
-  ggtitle("Distribution by Model category") +
-  scale_fill_manual(values = pal) +
-  scale_color_manual(values = pal) +
-  guides(fill = 'none', color = 'none') +
-  theme(text = element_text(family = "Times New Roman"),
-        axis.text = element_text(size = 10, angle = 45, hjust = 1),
-        axis.title = element_text(size = 10),
-        legend.text = element_text(size = 10),
-        legend.title = element_text(size = 10),
-        plot.title = element_text(size = 16))
-
-efficiency_df %>% ggplot(aes(x = con, y = eff_est, fill = con, color = con)) +
-  geom_rain(alpha = .5, rain.side = 'l',
-            boxplot.args = list(color = "black", outlier.shape = NA),
-            boxplot.args.pos = list(
-              position = ggpp::position_dodgenudge(x = .2), width = 0.1
-            )) +
-  facet_grid(~study) +
-  theme_classic() +
-  ggtitle("Distribution by Contrast category") +
-  scale_fill_manual(values = pal) +
-  scale_color_manual(values = pal) +
-  guides(fill = 'none', color = 'none') +
-  theme(text = element_text(family = "Times New Roman"),
-        axis.text = element_text(size = 10, angle = 45, hjust = 1),
-        axis.title = element_text(size = 10),
-        legend.text = element_text(size = 10),
-        legend.title = element_text(size = 10),
-        plot.title = element_text(size = 16))
-
-efficiency_df %>% ggplot(aes(x = motion, y = eff_est, fill = motion, color = motion)) +
-  geom_rain(alpha = .5, rain.side = 'l',
-            boxplot.args = list(color = "black", outlier.shape = NA),
-            boxplot.args.pos = list(
-              position = ggpp::position_dodgenudge(x = .2), width = 0.1
-            )) +
-  facet_grid(~study) +
-  theme_classic() +
-  ggtitle("Distribution by Motion category") +
-  scale_fill_manual(values = pal) +
-  scale_color_manual(values = pal) +
-  guides(fill = 'none', color = 'none') +
-  theme(text = element_text(family = "Times New Roman"),
-        axis.text = element_text(size = 10, angle = 45, hjust = 1),
-        axis.title = element_text(size = 10),
-        legend.text = element_text(size = 10),
-        legend.title = element_text(size = 10),
-        plot.title = element_text(size = 16))
+```{r, fig.width=16, fig.height=10}
+subset <- by_sample_conmod(efficiency_df, y_est = "eff_est", y_min = 0, y_max = 15)
+motion_rg = create_plot(efficiency_df, y_est = "eff_est", "motion","Efficiency", y_min = 0, y_max = 15, add_title=FALSE)
+modeltype_rg = create_plot(efficiency_df, y_est = "eff_est", "model","Efficiency", y_min = 0, y_max = 15,add_title=FALSE)
+contrast_rg = create_plot(efficiency_df, y_est = "eff_est", "con","Efficiency", y_min = 0, y_max = 15,  add_title=FALSE)
 
 
+cat("Plotting A = Motion; B = Model Parameterization, C = Contrast for Efficiency")
+(motion_rg) / (modeltype_rg + contrast_rg) + plot_annotation(tag_levels = c("A","B","C")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
+subset
 ```
 
 # Med/Min/Max Across Models {.tabset}
@@ -874,6 +792,14 @@ calculate_summary_stats(similarity_df, jaccard, "Jaccard")
 calculate_summary_stats(similarity_df, spearman, "Spearman")
 ```
 
+
+## NAcc
+
+```{r message=FALSE, warning=FALSE}
+cat("\tICC Right and Left avg ICC, miniumum and maximum")
+calculate_summary_stats(icc_nacc, avg_right, "Right avg ICC")
+calculate_summary_stats(icc_nacc, avg_left, "Left avg ICC")
+```
 
 # Specification Curve {.tabset}
 
@@ -961,6 +887,61 @@ df_summ_subset = df_summ %>%
 # subset plots
 est_label = "sub-threshold ICC"
 create_specr_plot(df_summ_subset, est_label)
+```
+
+
+### NAcc Avg 
+
+#### Left NAcc
+
+creating combined panel 1 and panel 2 for all model permutations first.
+
+```{r fig.height=6, fig.width=5, warning=FALSE}
+# first, combine independent model vars into string to create average for each model type
+icc_nacc$model_type <- paste(icc_nacc$fwhm, icc_nacc$motion,
+                             icc_nacc$con,  icc_nacc$model,
+                             sep = "_")
+
+# calculate the avg estimate of ICC across study, standard error and +/- 95% confidence interval. In complete version
+df_summ <- icc_nacc %>% 
+  group_by(model_type) %>% 
+  summarise(estimate = mean(avg_left), std.error = sd(avg_left)/sqrt(length(avg_left))) %>% 
+  mutate(conf.low = estimate - 1.96 * std.error, conf.high = estimate + 1.96 * std.error) %>% 
+  separate(col = model_type, into = c("fwhm","motion","contrast","model"), sep = "_|-", remove = FALSE)
+
+# plot
+est_label = "Left NAcc ICC"
+create_specr_plot(df_summ, est_label)
+
+```
+
+estimate variability across samples
+```{r}
+# median + variable for top
+icc_nacc %>% 
+  filter(model_type=='8.4_opt1_SgainBase_CueMod' | model_type=='8.4_opt1_LgainBase_CueMod' | model_type=='8.4_opt1_LgainNeut_CueMod')
+```
+
+#### Right NAcc
+
+creating combined panel 1 and panel 2 for all model permutations first.
+
+```{r fig.height=6, fig.width=5, warning=FALSE}
+# first, combine independent model vars into string to create average for each model type
+icc_nacc$model_type <- paste(icc_nacc$fwhm, icc_nacc$motion,
+                             icc_nacc$con,  icc_nacc$model,
+                             sep = "_")
+
+# calculate the avg estimate of ICC across study, standard error and +/- 95% confidence interval. In complete version
+df_summ <- icc_nacc %>% 
+  group_by(model_type) %>% 
+  summarise(estimate = mean(avg_right), std.error = sd(avg_right)/sqrt(length(avg_right))) %>% 
+  mutate(conf.low = estimate - 1.96 * std.error, conf.high = estimate + 1.96 * std.error) %>% 
+  separate(col = model_type, into = c("fwhm","motion","contrast","model"), sep = "_|-", remove = FALSE)
+
+# plot
+est_label = "Right NAcc ICC"
+create_specr_plot(df_summ, est_label)
 ```
 
 

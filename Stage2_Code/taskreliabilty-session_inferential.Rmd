@@ -31,6 +31,13 @@ pacman::p_load(tidyverse, ggplot2, knitr, kableExtra, ggpubr, lme4, performance,
 session_info = sessionInfo()
 system=session_info[[1]][1]
 R_vers = session_info[[1]][13]
+
+pal<- c("#1D91C0","#67001F","#CB181D","#78C679","#F46D43","#A6CEE3",
+        "#F7FCFD","#FD8D3C","#A6D854","#D4B9DA","#6A51A3",
+        "#7F0000","#D9D9D9","#FFF7BC","#000000","#F0F0F0",
+        "#C7EAE5","#003C30","#F16913","#FFF7FB","#8C6BB1",
+        "#C7E9B4","#762A83","#FC9272","#DF65B0","#EF3B2C",
+        "#74C476","#E5F5F9","#AE017E","#F7F7F7")
 ```
 
 ```{r}
@@ -350,6 +357,26 @@ kable(model_summary, caption = "Model outputs for Supra-threshold ICC", booktabs
 perform_emmeans_contrasts(model)
 ```
 
+### Interaction: Con * Model
+
+#### HLM Model
+
+```{r}
+model_interact = lmer(median_est ~ fwhm + motion + model * con + (1 | study), data = icc_subthresh, REML = FALSE)
+tab_model(model_interact)
+```
+
+#### Tukey's emmeans
+
+```{r}
+emmeans(model_interact, ~  "model", by = "con", adjust = "sidak")
+emmip(model_interact, con ~ model, CIs = TRUE, style = "factor", 
+      dodge = .2, CIarg = list(linetype = "dashed"),
+      xlab = "Parameterization", ylab = "emmeans estimate") + 
+  scale_color_manual(values = pal) + theme_minimal()
+
+```
+
 ### subthreshold
 
 #### HLM Model
@@ -373,6 +400,25 @@ kable(model_summary, caption = "Model outputs for Sub-threshold ICC", booktabs =
 perform_emmeans_contrasts(model_sub)
 ```
 
+### Interaction: Con * Model
+
+#### HLM Model
+
+```{r}
+model_interact = lmer(median_est ~ fwhm + motion + model * con + (1 | study), data = icc_subthresh, REML = FALSE)
+tab_model(model_interact)
+```
+
+#### Tukey's emmeans
+
+```{r}
+emmeans(model_interact, ~  "model", by = "con", adjust = "sidak")
+emmip(model_interact, con ~ model, CIs = TRUE, style = "factor", 
+      dodge = .2, CIarg = list(linetype = "dashed"),
+      xlab = "Parameterization", ylab = "emmeans estimate") + 
+  scale_color_manual(values = pal) + theme_minimal()
+
+```
 
 ## MSBS
 
@@ -419,7 +465,7 @@ kable(model_summary, caption = "Model outputs for Sub-threshold MSBS", booktabs 
 
 #### Tukey's emmeans
 
-```{r}
+```{r results='asis'}
 perform_emmeans_contrasts(model_sub)
 ```
 
@@ -468,7 +514,7 @@ kable(model_summary, caption = "Model outputs for Sub-threshold MSWS", booktabs 
 
 #### Tukey's emmeans
 
-```{r}
+```{r results='asis'}
 perform_emmeans_contrasts(model_sub)
 ```
 
@@ -497,6 +543,26 @@ kable(model_summary, caption = "Model outputs for Jaccard Similarity", booktabs 
 perform_emmeans_contrasts(model)
 ```
 
+### Interaction: Con * Model
+
+#### HLM Model
+
+```{r}
+model_interact = lmer(jaccard ~ fwhm + motion + model * con + (1 | study), 
+                      data = similarity_df, REML = FALSE)
+tab_model(model_interact)
+```
+
+#### Tukey's emmeans
+
+```{r}
+emmeans(model_interact, ~  "model", by = "con", adjust = "sidak")
+emmip(model_interact, con ~ model, CIs = TRUE, style = "factor", 
+      dodge = .2, CIarg = list(linetype = "dashed"),
+      xlab = "Parameterization", ylab = "emmeans estimate") + 
+  scale_color_manual(values = pal) + theme_minimal()
+
+```
 
 ### Spearman
 
@@ -521,7 +587,26 @@ kable(model_summary, caption = "Model outputs for Spearman rho", booktabs = TRUE
 perform_emmeans_contrasts(model)
 ```
 
-# Stability of the correlation
+### Interaction: Con * Model
+
+#### HLM Model
+
+```{r}
+model_interact = lmer(spearman ~ fwhm + motion + model * con + (1 | study), 
+                      data = similarity_df, REML = FALSE)
+tab_model(model_interact)
+```
+
+#### Tukey's emmeans
+
+```{r}
+emmeans(model_interact, ~  "model", by = "con", adjust = "sidak")
+emmip(model_interact, con ~ model, CIs = TRUE, style = "factor", 
+      dodge = .2, CIarg = list(linetype = "dashed"),
+      xlab = "Parameterization", ylab = "emmeans estimate") + 
+  scale_color_manual(values = pal) + theme_minimal()
+
+```
 
 
 

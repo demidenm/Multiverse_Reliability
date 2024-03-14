@@ -31,6 +31,13 @@ pacman::p_load(tidyverse, ggplot2, knitr, kableExtra, ggpubr, lme4, performance,
 session_info = sessionInfo()
 system=session_info[[1]][1]
 R_vers = session_info[[1]][13]
+
+pal<- c("#1D91C0","#67001F","#CB181D","#78C679","#F46D43","#A6CEE3",
+        "#F7FCFD","#FD8D3C","#A6D854","#D4B9DA","#6A51A3",
+        "#7F0000","#D9D9D9","#FFF7BC","#000000","#F0F0F0",
+        "#C7EAE5","#003C30","#F16913","#FFF7FB","#8C6BB1",
+        "#C7E9B4","#762A83","#FC9272","#DF65B0","#EF3B2C",
+        "#74C476","#E5F5F9","#AE017E","#F7F7F7")
 ```
 
 ```{r}
@@ -106,7 +113,7 @@ perform_emmeans_contrasts <- function(model) {
   result_list <- list()
   for (i in seq_along(contrast_list)) {
     contrast <- contrast_list[[i]]
-    mod_thsd <- emmeans(object = model, specs = contrast, pbkrtest.limit = mod_lmer_obs)
+    mod_thsd <- emmeans(object = model, specs = contrast, pbkrtest.limit = mod_lmer_obs, adjust = "tukey")
     
     # Store the table in the result list
     result_list[[i]] <- mod_thsd$contrasts %>% summary(infer = TRUE) %>%
@@ -146,7 +153,7 @@ Aim1: *two HLMs are used to regress the MSBS and MSWS from the median ICC estima
 
 # Load data {.tabset}
 
-## ABCD (PILOT N 20)
+## ABCD 
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 # ICC
@@ -154,6 +161,9 @@ abcd_icc_subthresh <- read.csv("output/sample-abcd_type-run_stats-est_mask-wilso
 abcd_icc_subthresh$study <- "abcd"
 abcd_icc_suprathresh <- read.csv("output/sample-abcd_type-run_stats-est_mask-wilson-supra.tsv", sep = '\t')
 abcd_icc_suprathresh$study <- "abcd"
+abcd_icc_nacc <- read.csv("./output/sample-AHRB_type-run_stats-est_mask-nacc.tsv", sep = '\t')
+abcd_icc_nacc$study <- "abcd"
+
 # MSBS
 abcd_bs_subthresh <- read.csv("output/sample-abcd_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
 abcd_bs_subthresh$study <- "abcd"
@@ -178,6 +188,8 @@ ahrb_icc_subthresh <- read.csv("output/sample-AHRB_type-run_stats-est_mask-wilso
 ahrb_icc_subthresh$study <- "ahrb"
 ahrb_icc_suprathresh <- read.csv("output/sample-AHRB_type-run_stats-est_mask-wilson-supra.tsv", sep = '\t')
 ahrb_icc_suprathresh$study <- "ahrb"
+ahrb_icc_nacc <- read.csv("./output/sample-AHRB_type-run_stats-est_mask-nacc.tsv", sep = '\t')
+ahrb_icc_nacc$study <- "ahrb"
 # MSBS
 ahrb_bs_subthresh <- read.csv("output/sample-AHRB_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
 ahrb_bs_subthresh$study <- "ahrb"
@@ -203,6 +215,10 @@ mls_icc_subthresh <- update_mls_fwhm(mls_icc_subthresh)
 mls_icc_suprathresh <- read.csv("output/sample-MLS_type-run_stats-est_mask-wilson-supra.tsv", sep = '\t')
 mls_icc_suprathresh$study <- "mls"
 mls_icc_suprathresh <- update_mls_fwhm(mls_icc_suprathresh)
+
+mls_icc_nacc <- read.csv("./output/sample-MLS_type-run_stats-est_mask-nacc.tsv", sep = '\t')
+mls_icc_nacc$study <- "mls"
+mls_icc_nacc <- update_mls_fwhm(mls_icc_nacc)
 
 # MSBS
 mls_bs_subthresh <- read.csv("output/sample-MLS_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
@@ -257,6 +273,15 @@ icc_suprathresh <-  icc_suprathresh %>% mutate(
   ) %>% 
   mutate(con = gsub("-", "", con))
 
+icc_nacc <- rbind(abcd_icc_nacc, ahrb_icc_nacc, mls_icc_nacc)
+icc_nacc <-  icc_nacc %>% mutate(
+    con = gsub("contrast-", "", con),
+    motion = gsub("mot-", "", motion),
+    model = gsub("mod-", "", model),
+    fwhm = gsub("fwhm-", "", fwhm)
+  ) %>% 
+  mutate(con = gsub("-", "", con))
+
 # MSBS
 bs_subthresh <- rbind(abcd_bs_subthresh, ahrb_bs_subthresh, mls_bs_subthresh)
 bs_subthresh <- bs_subthresh %>% mutate(
@@ -302,7 +327,7 @@ similarity_df$fwhm <- as.character(similarity_df$fwhm)
 # remove excess files
 rm(ahrb_bs_subthresh, ahrb_bs_suprathresh, ahrb_icc_subthresh, ahrb_icc_suprathresh, ahrb_ws_subthresh, ahrb_ws_suprathresh,ahrb_similarity,
    abcd_bs_subthresh, abcd_bs_suprathresh, abcd_icc_subthresh, abcd_icc_suprathresh, abcd_ws_subthresh, abcd_ws_suprathresh,abcd_similarity,
-   mls_bs_subthresh, mls_bs_suprathresh, mls_icc_subthresh, mls_icc_suprathresh, mls_ws_subthresh, mls_ws_suprathresh,mls_similarity)
+   mls_bs_subthresh, mls_bs_suprathresh, mls_icc_subthresh, mls_icc_suprathresh, mls_ws_subthresh, mls_ws_suprathresh,mls_similarity,mls_icc_nacc, ahrb_icc_nacc, abcd_icc_nacc)
 
 ```
 
@@ -350,6 +375,26 @@ kable(model_summary, caption = "Model outputs for Supra-threshold ICC", booktabs
 perform_emmeans_contrasts(model)
 ```
 
+### Interaction: Con * Model
+
+#### HLM Model
+
+```{r}
+model_interact = lmer(median_est ~ fwhm + motion + model * con + (1 | study), data = icc_suprathresh, REML = FALSE)
+tab_model(model_interact)
+```
+
+#### Tukey's emmeans
+
+```{r}
+emmeans(model_interact, ~  "model", by = "con", adjust = "sidak") 
+emmip(model_interact, con ~ model, CIs = TRUE, style = "factor", 
+      dodge = .2, CIarg = list(linetype = "dashed"),
+      xlab = "Parameterization", ylab = "emmeans estimate") + 
+  scale_color_manual(values = pal) + theme_minimal()
+
+```
+
 ### subthreshold
 
 #### HLM Model
@@ -372,6 +417,97 @@ kable(model_summary, caption = "Model outputs for Sub-threshold ICC", booktabs =
 ```{r results='asis'}
 perform_emmeans_contrasts(model_sub)
 ```
+
+
+### Interaction: Con * Model
+
+#### HLM Model
+
+```{r}
+model_interact = lmer(median_est ~ fwhm + motion + model * con + (1 | study), data = icc_subthresh, REML = FALSE)
+tab_model(model_interact)
+```
+
+#### Tukey's emmeans
+
+```{r}
+emmeans(model_interact, ~  "model", by = "con", adjust = "sidak")
+emmip(model_interact, con ~ model, CIs = TRUE, style = "factor", 
+      dodge = .2, CIarg = list(linetype = "dashed"),
+      xlab = "Parameterization", ylab = "emmeans estimate") + 
+  scale_color_manual(values = pal) + theme_minimal()
+
+```
+
+
+### Right NAcc
+
+#### HLM Model
+
+Running w/ random slope + intercept: `boundary (singular) fit: see help('isSingular')`, per registered report using random intercept only model.
+
+R squared:
+
+- Conditional: variance explained for ENTIRE model; 
+- Marginal: variance explained for Fixed effects only
+
+
+```{r warning=FALSE}
+# if the above model does not converge, random intercept only model will be used:
+model = lmer(avg_right ~ fwhm + motion + model + con + (1 | study), data = icc_nacc, REML = FALSE)
+orig_r2 = round(as.numeric(r2_nakagawa(model)[2]),2)
+tab_model(model)
+```
+
+
+```{r message=FALSE, warning=FALSE}
+options(scipen = 999, digits = 4)
+model_summary <- compare_models(full_model = model, full_data = icc_nacc, full_r2 = orig_r2)
+
+kable(model_summary, caption = "Model outputs for Right Nacc", booktabs = TRUE) %>%
+  kable_styling(font_size = 12, position = 'center',html_font = "Times New Roman")
+```
+
+#### Tukey's emmeans
+
+```{r results='asis'}
+perform_emmeans_contrasts(model)
+```
+
+
+### Left NAcc
+
+#### HLM Model
+
+Running w/ random slope + intercept: `boundary (singular) fit: see help('isSingular')`, per registered report using random intercept only model.
+
+R squared:
+
+- Conditional: variance explained for ENTIRE model; 
+- Marginal: variance explained for Fixed effects only
+
+
+```{r warning=FALSE}
+# if the above model does not converge, random intercept only model will be used:
+model = lmer(avg_left ~ fwhm + motion + model + con + (1 | study), data = icc_nacc, REML = FALSE)
+orig_r2 = round(as.numeric(r2_nakagawa(model)[2]),2)
+tab_model(model)
+```
+
+
+```{r message=FALSE, warning=FALSE}
+options(scipen = 999, digits = 4)
+model_summary <- compare_models(full_model = model, full_data = icc_nacc, full_r2 = orig_r2)
+
+kable(model_summary, caption = "Model outputs for Left Nacc", booktabs = TRUE) %>%
+  kable_styling(font_size = 12, position = 'center',html_font = "Times New Roman")
+```
+#### Tukey's emmeans
+
+```{r results='asis'}
+perform_emmeans_contrasts(model)
+```
+
 
 
 ## MSBS
@@ -497,6 +633,26 @@ kable(model_summary, caption = "Model outputs for Jaccard Similarity", booktabs 
 perform_emmeans_contrasts(model)
 ```
 
+### Interaction: Con * Model
+
+#### HLM Model
+
+```{r}
+model_interact = lmer(jaccard ~ fwhm + motion + model * con + (1 | study), 
+                      data = similarity_df, REML = FALSE)
+tab_model(model_interact)
+```
+
+#### Tukey's emmeans
+
+```{r}
+emmeans(model_interact, ~  "model", by = "con", adjust = "sidak")
+emmip(model_interact, con ~ model, CIs = TRUE, style = "factor", 
+      dodge = .2, CIarg = list(linetype = "dashed"),
+      xlab = "Parameterization", ylab = "emmeans estimate") + 
+  scale_color_manual(values = pal) + theme_minimal()
+
+```
 
 ### Spearman
 
@@ -521,7 +677,25 @@ kable(model_summary, caption = "Model outputs for Spearman rho", booktabs = TRUE
 perform_emmeans_contrasts(model)
 ```
 
-# Stability of the correlation
+### Interaction: Con * Model
 
+#### HLM Model
+
+```{r}
+model_interact = lmer(spearman ~ fwhm + motion + model * con + (1 | study), 
+                      data = similarity_df, REML = FALSE)
+tab_model(model_interact)
+```
+
+#### Tukey's emmeans
+
+```{r}
+emmeans(model_interact, ~  "model", by = "con", adjust = "sidak")
+emmip(model_interact, con ~ model, CIs = TRUE, style = "factor", 
+      dodge = .2, CIarg = list(linetype = "dashed"),
+      xlab = "Parameterization", ylab = "emmeans estimate") + 
+  scale_color_manual(values = pal) + theme_minimal()
+
+```
 
 
