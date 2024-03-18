@@ -49,7 +49,7 @@ Plotting function to reduce code length + simplify. Then, short function to plac
 - 7.0 --> 8.4
 
 ```{r}
-create_plot <- function(dataset, y_est, type, thresh, y_min, y_max, add_title = TRUE) {
+create_plot <- function(dataset, y_est, type, thresh, y_min, y_max, y_lab, add_title = TRUE) {
   plot <- dataset %>%
     ggplot(aes(x = .data[[type]], y = .data[[y_est]], fill = .data[[type]], color = .data[[type]])) +
     geom_rain(alpha = .5, rain.side = 'l',
@@ -58,7 +58,7 @@ create_plot <- function(dataset, y_est, type, thresh, y_min, y_max, add_title = 
                 position = ggpp::position_dodgenudge(x = .1), width = 0.1
               )) +
     facet_grid(~study) +
-    ylab("Estimate") +
+    ylab(y_lab) +
     ylim(y_min,y_max)+
     theme_classic() 
   
@@ -78,7 +78,7 @@ create_plot <- function(dataset, y_est, type, thresh, y_min, y_max, add_title = 
           plot.title = element_text(size = 16))
 }
 
-by_sample_conmod <- function(dataset, y_est,y_min, y_max) {
+by_sample_conmod <- function(dataset, y_est, y_min, y_max, y_lab) {
   
   # Define a function to create individual plots
   create_plot <- function(data, study) {
@@ -89,7 +89,7 @@ by_sample_conmod <- function(dataset, y_est,y_min, y_max) {
                   position = ggpp::position_dodgenudge(x = .1), width = 0.1
                 )) +
       facet_grid(~model) +
-      ylab("Estimate") +
+      ylab(y_lab) +
       ylim(y_min,y_max)+
       theme_classic() +
       scale_fill_manual(values = pal) +
@@ -161,7 +161,7 @@ calculate_summary_stats <- function(data, variable, est_type) {
 The packages are automatically loaded using `pacman`. The reported .html was last ran on the system: `r system` and R version: `r R_vers`
 ***
 ***
-In the Stage 1 [PCI Registered Report](https://doi.org/10.17605/OSF.IO/NQGEH) we are focused on Individual Continues (intraclass correlation) and the binary/continuoues group similarity (jaccard and spearman). Related to the descriptive file here, we describe each step that contained within this file that is relevant to the registered analyses
+In the Stage 1 [PCI Registered Report](https://doi.org/10.17605/OSF.IO/NQGEH) we are focused on Individual Continouous (intraclass correlation) and the binary/continuous group similarity (jaccard and spearman). This descriptive file includes the output information for the distribution plots, min/max/mean/median of the estimates and the spec plots for each estimate time. This report is for the *Session1 between-run* estimates
 
 **continuous**
 
@@ -488,11 +488,15 @@ Plotting overall and for each of [four] categories
 Creating rainclouds via [ggrain](https://cran.r-project.org/web/packages/ggrain/vignettes/ggrain.html)
 
 ```{r, fig.width=16, fig.height=10}
-subset <- by_sample_conmod(icc_subthresh, y_est = "median_est", y_min =-.1, y_max=.6)
-fwhm_rg = create_plot(icc_subthresh, y_est = "median_est", type = "fwhm",  thresh = "sub-threshold", y_min=-.1, y_max=.6, add_title=FALSE)
-motion_rg = create_plot(icc_subthresh, y_est = "median_est", type = "motion", thresh = "sub-threshold", y_min=-.1, y_max=.6, add_title=FALSE)
-modeltype_rg = create_plot(icc_subthresh, y_est = "median_est", type = "model", thresh = "sub-threshold",y_min=-.1, y_max=.6, add_title=FALSE)
-contrast_rg = create_plot(icc_subthresh, y_est = "median_est", type = "con", thresh = "sub-threshold", y_min=-.1, y_max=.6, add_title=FALSE)
+subset <- by_sample_conmod(icc_subthresh, y_est = "median_est", y_min =-.1, y_max=.6, y_lab = "Median ICC")
+fwhm_rg = create_plot(icc_subthresh, y_est = "median_est", type = "fwhm",  thresh = "sub-threshold", 
+                      y_min=-.1, y_max=.6, y_lab = "Median ICC", add_title=FALSE)
+motion_rg = create_plot(icc_subthresh, y_est = "median_est", type = "motion", thresh = "sub-threshold", 
+                        y_min=-.1, y_max=.6, y_lab = "Median ICC", add_title=FALSE)
+modeltype_rg = create_plot(icc_subthresh, y_est = "median_est", type = "model", thresh = "sub-threshold",
+                           y_min=-.1, y_max=.6, y_lab = "Median ICC", add_title=FALSE)
+contrast_rg = create_plot(icc_subthresh, y_est = "median_est", type = "con", thresh = "sub-threshold", 
+                          y_min=-.1, y_max=.6, y_lab = "Median ICC", add_title=FALSE)
 
 cat("Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast for sub-threshold mask")
 (motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
@@ -504,11 +508,15 @@ subset
 
 
 ```{r, fig.width=16, fig.height=10}
-subset <- by_sample_conmod(icc_suprathresh, y_est = "median_est", y_min=-.1, y_max=.6)
-fwhm_rg = create_plot(icc_suprathresh, y_est = "median_est", type = "fwhm",  thresh = "supra-threshold", y_min=-.1, y_max=.6, add_title=FALSE)
-motion_rg = create_plot(icc_suprathresh, y_est = "median_est", type = "motion", thresh = "supra-threshold", y_min=-.1, y_max=.6, add_title=FALSE)
-modeltype_rg = create_plot(icc_suprathresh, y_est = "median_est", type = "model", thresh = "supra-threshold",y_min=-.1, y_max=.6, add_title=FALSE)
-contrast_rg = create_plot(icc_suprathresh, y_est = "median_est", type = "con", thresh = "supra-threshold", y_min=-.1, y_max=.6, add_title=FALSE)
+subset <- by_sample_conmod(icc_suprathresh, y_est = "median_est", y_min=-.1, y_max=.6, y_lab = "Median ICC")
+fwhm_rg = create_plot(icc_suprathresh, y_est = "median_est", type = "fwhm",  thresh = "supra-threshold", 
+                      y_min=-.1, y_max=.6, y_lab = "Median ICC", add_title=FALSE)
+motion_rg = create_plot(icc_suprathresh, y_est = "median_est", type = "motion", thresh = "supra-threshold", 
+                        y_min=-.1, y_max=.6, y_lab = "Median ICC", add_title=FALSE)
+modeltype_rg = create_plot(icc_suprathresh, y_est = "median_est", type = "model", thresh = "supra-threshold",
+                           y_min=-.1, y_max=.6, y_lab = "Median ICC", add_title=FALSE)
+contrast_rg = create_plot(icc_suprathresh, y_est = "median_est", type = "con", thresh = "supra-threshold", 
+                          y_min=-.1, y_max=.6, y_lab = "Median ICC", add_title=FALSE)
 
 
 cat("Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast for supra-threshold mask")
@@ -521,11 +529,10 @@ subset
 #### Right
 
 ```{r, fig.width=16, fig.height=10}
-fwhm_rg = create_plot(icc_nacc, y_est = "avg_right", "fwhm","Avg Right NAcc", y_min=-.1, y_max=.6, add_title=FALSE)
-motion_rg = create_plot(icc_nacc, y_est = "avg_right", "motion","Avg Right NAcc", y_min=-.1, y_max=.6, add_title=FALSE)
-modeltype_rg = create_plot(icc_nacc, y_est = "avg_right", "model","Avg Right NAcc",y_min=-.1, y_max=.6, add_title=FALSE)
-contrast_rg = create_plot(icc_nacc, y_est = "avg_right", "con","sAvg Right NAcc", y_min=-.1, y_max=.6, add_title=FALSE)
-
+fwhm_rg = create_plot(icc_nacc, y_est = "avg_right", "fwhm","Avg Right NAcc", y_min=-.3, y_max=.6, y_lab = "ICC", add_title=FALSE)
+motion_rg = create_plot(icc_nacc, y_est = "avg_right", "motion","Avg Right NAcc", y_min=-.3, y_max=.6, y_lab = "ICC", add_title=FALSE)
+modeltype_rg = create_plot(icc_nacc, y_est = "avg_right", "model","Avg Right NAcc",y_min=-.3, y_max=.6, y_lab = "ICC", add_title=FALSE)
+contrast_rg = create_plot(icc_nacc, y_est = "avg_right", "con","Avg Right NAcc", y_min=-.3, y_max=.6, y_lab = "ICC", add_title=FALSE)
 
 cat("Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast for Right NAcc")
 (motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
@@ -535,11 +542,10 @@ cat("Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast for
 #### Left 
 
 ```{r, fig.width=16, fig.height=10}
-fwhm_rg = create_plot(icc_nacc, y_est = "avg_left", "fwhm","Avg Left NAcc", y_min=-.1, y_max=.6, add_title=FALSE)
-motion_rg = create_plot(icc_nacc, y_est = "avg_left", "motion","Avg Left NAcc", y_min=-.1, y_max=.6, add_title=FALSE)
-modeltype_rg = create_plot(icc_nacc, y_est = "avg_left", "model","Avg Left NAcc",y_min=-.1, y_max=.6, add_title=FALSE)
-contrast_rg = create_plot(icc_nacc, y_est = "avg_left", "con","sAvg Left NAcc", y_min=-.1, y_max=.6, add_title=FALSE)
-
+fwhm_rg = create_plot(icc_nacc, y_est = "avg_left", "fwhm","Avg Left NAcc", y_min=-.3, y_max=.6, y_lab = "ICC", add_title=FALSE)
+motion_rg = create_plot(icc_nacc, y_est = "avg_left", "motion","Avg Left NAcc", y_min=-.3, y_max=.6, y_lab = "ICC", add_title=FALSE)
+modeltype_rg = create_plot(icc_nacc, y_est = "avg_left", "model","Avg Left NAcc",y_min=-.3, y_max=.6, y_lab = "ICC", add_title=FALSE)
+contrast_rg = create_plot(icc_nacc, y_est = "avg_left", "con","Avg Left NAcc", y_min=-.3, y_max=.6, y_lab = "ICC", add_title=FALSE)
 
 cat("Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast for Left NAcc")
 (motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
@@ -552,11 +558,15 @@ Plotting overall and for each of [four] categories
 ### Subthreshold Mask
 
 ```{r, fig.width=16, fig.height=10}
-subset <- by_sample_conmod(bs_subthresh, y_est = "median_est", y_min=0, y_max=7)
-fwhm_rg = create_plot(bs_subthresh, y_est = "median_est", type = "fwhm",  thresh = "sub-threshold", y_min=0, y_max=7, add_title=FALSE)
-motion_rg = create_plot(bs_subthresh, y_est = "median_est", type = "motion", thresh = "sub-threshold", y_min=0, y_max=7, add_title=FALSE)
-modeltype_rg = create_plot(bs_subthresh, y_est = "median_est", type = "model", thresh = "sub-threshold",y_min=0, y_max=7, add_title=FALSE)
-contrast_rg = create_plot(bs_subthresh, y_est = "median_est", type = "con", thresh = "sub-threshold", y_min=0, y_max=7, add_title=FALSE)
+subset <- by_sample_conmod(bs_subthresh, y_est = "median_est", y_min=0, y_max=7, y_lab = "Median MSBS")
+fwhm_rg = create_plot(bs_subthresh, y_est = "median_est", type = "fwhm",  thresh = "sub-threshold", 
+                      y_min=0, y_max=7, y_lab = "Median MSBS", add_title=FALSE)
+motion_rg = create_plot(bs_subthresh, y_est = "median_est", type = "motion", thresh = "sub-threshold", 
+                        y_min=0, y_max=7, y_lab = "Median MSBS", add_title=FALSE)
+modeltype_rg = create_plot(bs_subthresh, y_est = "median_est", type = "model", thresh = "sub-threshold",
+                           y_min=0, y_max=7, y_lab = "Median MSBS", add_title=FALSE)
+contrast_rg = create_plot(bs_subthresh, y_est = "median_est", type = "con", thresh = "sub-threshold", 
+                          y_min=0, y_max=7, y_lab = "Median MSBS", add_title=FALSE)
 
 cat("Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast for sub-threshold mask")
 (motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
@@ -566,11 +576,15 @@ subset
 ### Suprathreshold Mask
 
 ```{r, fig.width=16, fig.height=10}
-subset <- by_sample_conmod(bs_suprathresh, y_est = "median_est", y_min=0, y_max=7)
-fwhm_rg = create_plot(bs_suprathresh, y_est = "median_est", type = "fwhm",  thresh = "supra-threshold", y_min=0, y_max=7, add_title=FALSE)
-motion_rg = create_plot(bs_suprathresh, y_est = "median_est", type = "motion", thresh = "supra-threshold", y_min=0, y_max=7, add_title=FALSE)
-modeltype_rg = create_plot(bs_suprathresh, y_est = "median_est", type = "model", thresh = "supra-threshold",y_min=0, y_max=7, add_title=FALSE)
-contrast_rg = create_plot(bs_suprathresh, y_est = "median_est", type = "con", thresh = "supra-threshold", y_min=0, y_max=7, add_title=FALSE)
+subset <- by_sample_conmod(bs_suprathresh, y_est = "median_est", y_min=0, y_max=7, y_lab = "Median MSBS")
+fwhm_rg = create_plot(bs_suprathresh, y_est = "median_est", type = "fwhm",  thresh = "supra-threshold", 
+                      y_min=0, y_max=7, y_lab = "Median MSBS", add_title=FALSE)
+motion_rg = create_plot(bs_suprathresh, y_est = "median_est", type = "motion", thresh = "supra-threshold", 
+                        y_min=0, y_max=7, y_lab = "Median MSBS", add_title=FALSE)
+modeltype_rg = create_plot(bs_suprathresh, y_est = "median_est", type = "model", thresh = "supra-threshold",
+                           y_min=0, y_max=7, y_lab = "Median MSBS", add_title=FALSE)
+contrast_rg = create_plot(bs_suprathresh, y_est = "median_est", type = "con", thresh = "supra-threshold", 
+                          y_min=0, y_max=7, y_lab = "Median MSBS", add_title=FALSE)
 
 
 cat("Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast for supra-threshold mask")
@@ -586,11 +600,15 @@ Plotting overall and for each of [four] categories
 ### Subthreshold Mask
 
 ```{r, fig.width=16, fig.height=10}
-subset <- by_sample_conmod(ws_subthresh, y_est = "median_est", y_min=0, y_max=7)
-fwhm_rg = create_plot(ws_subthresh, y_est = "median_est", type = "fwhm",  thresh = "sub-threshold", y_min=0, y_max=7, add_title=FALSE)
-motion_rg = create_plot(ws_subthresh, y_est = "median_est", type = "motion", thresh = "sub-threshold", y_min=0, y_max=7, add_title=FALSE)
-modeltype_rg = create_plot(ws_subthresh, y_est = "median_est", type = "model", thresh = "sub-threshold",y_min=0, y_max=7, add_title=FALSE)
-contrast_rg = create_plot(ws_subthresh, y_est = "median_est", type = "con", thresh = "sub-threshold", y_min=0, y_max=7, add_title=FALSE)
+subset <- by_sample_conmod(ws_subthresh, y_est = "median_est", y_min=0, y_max=7, y_lab = "Median MSWS")
+fwhm_rg = create_plot(ws_subthresh, y_est = "median_est", type = "fwhm",  thresh = "sub-threshold", 
+                      y_min=0, y_max=7, y_lab = "Median MSWS", add_title=FALSE)
+motion_rg = create_plot(ws_subthresh, y_est = "median_est", type = "motion", thresh = "sub-threshold", 
+                        y_min=0, y_max=7, y_lab = "Median MSWS", add_title=FALSE)
+modeltype_rg = create_plot(ws_subthresh, y_est = "median_est", type = "model", thresh = "sub-threshold",
+                           y_min=0, y_max=7, y_lab = "Median MSWS", add_title=FALSE)
+contrast_rg = create_plot(ws_subthresh, y_est = "median_est", type = "con", thresh = "sub-threshold", 
+                          y_min=0, y_max=7, y_lab = "Median MSWS", add_title=FALSE)
 
 cat("Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast for sub-threshold mask")
 (motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
@@ -600,12 +618,15 @@ subset
 ### Suprathreshold Mask
 
 ```{r, fig.width=16, fig.height=10}
-subset <- by_sample_conmod(ws_suprathresh, y_est = "median_est", y_min=0, y_max=7)
-fwhm_rg = create_plot(ws_suprathresh, y_est = "median_est", type = "fwhm",  thresh = "supra-threshold", y_min=0, y_max=7, add_title=FALSE)
-motion_rg = create_plot(ws_suprathresh, y_est = "median_est", type = "motion", thresh = "supra-threshold", y_min=0, y_max=7, add_title=FALSE)
-modeltype_rg = create_plot(ws_suprathresh, y_est = "median_est", type = "model", thresh = "supra-threshold",y_min=0, y_max=7, add_title=FALSE)
-contrast_rg = create_plot(ws_suprathresh, y_est = "median_est", type = "con", thresh = "supra-threshold", y_min=0, y_max=7, add_title=FALSE)
-
+subset <- by_sample_conmod(ws_suprathresh, y_est = "median_est", y_min=0, y_max=7, y_lab = "Median MSWS")
+fwhm_rg = create_plot(ws_suprathresh, y_est = "median_est", type = "fwhm",  thresh = "supra-threshold", 
+                      y_min=0, y_max=7, y_lab = "Median MSWS", add_title=FALSE)
+motion_rg = create_plot(ws_suprathresh, y_est = "median_est", type = "motion", thresh = "supra-threshold", 
+                        y_min=0, y_max=7, y_lab = "Median MSWS", add_title=FALSE)
+modeltype_rg = create_plot(ws_suprathresh, y_est = "median_est", type = "model", thresh = "supra-threshold",
+                           y_min=0, y_max=7, y_lab = "Median MSWS", add_title=FALSE)
+contrast_rg = create_plot(ws_suprathresh, y_est = "median_est", type = "con", thresh = "supra-threshold", 
+                          y_min=0, y_max=7, y_lab = "Median MSWS", add_title=FALSE)
 
 cat("Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast for supra-threshold mask")
 (motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
@@ -618,13 +639,16 @@ subset
 ### jaccard
 
 ```{r, fig.width=16, fig.height=10}
-subset <- by_sample_conmod(similarity_df, y_est = "jaccard", y_min=0, y_max = 1)
+subset <- by_sample_conmod(similarity_df, y_est = "jaccard", y_min=0, y_max = 1, y_lab = "Jaccard")
 
-fwhm_rg = create_plot(similarity_df, y_est = "jaccard", type = "fwhm", thresh = "Jaccard", y_min=0, y_max = 1, add_title=FALSE)
-motion_rg = create_plot(similarity_df, y_est = "jaccard", type = "motion", thresh = "Jaccard", y_min=0, y_max = 1, add_title=FALSE)
-modeltype_rg = create_plot(similarity_df, y_est = "jaccard", type = "model", thresh="Jaccrd", y_min=0, y_max = 1, add_title=FALSE)
-contrast_rg = create_plot(similarity_df, y_est = "jaccard", type = "con", thresh = "Jaccard", y_min=0, y_max = 1, add_title=FALSE)
-
+fwhm_rg = create_plot(similarity_df, y_est = "jaccard", type = "fwhm", thresh = "Jaccard", 
+                      y_min=0, y_max = 1, y_lab = "Jaccard", add_title=FALSE)
+motion_rg = create_plot(similarity_df, y_est = "jaccard", type = "motion", thresh = "Jaccard", 
+                        y_min=0, y_max = 1, y_lab = "Jaccard", add_title=FALSE)
+modeltype_rg = create_plot(similarity_df, y_est = "jaccard", type = "model", thresh="Jaccrd", 
+                           y_min=0, y_max = 1, y_lab = "Jaccard", add_title=FALSE)
+contrast_rg = create_plot(similarity_df, y_est = "jaccard", type = "con", thresh = "Jaccard", 
+                          y_min=0, y_max = 1, y_lab = "Jaccard", add_title=FALSE)
 
 cat("Jaccard: Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast")
 (motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
@@ -634,13 +658,16 @@ subset
 ### spearman
 
 ```{r, fig.width=16, fig.height=10}
-subset <- by_sample_conmod(similarity_df, y_est = "spearman", y_min=0, y_max = 1)
+subset <- by_sample_conmod(similarity_df, y_est = "spearman", y_min=0, y_max = 1, y_lab = "Spearman")
 
-fwhm_rg = create_plot(similarity_df, y_est = "spearman", type = "fwhm", thresh = "Spearman", y_min=0, y_max = 1, add_title=FALSE)
-motion_rg = create_plot(similarity_df, y_est = "spearman", type = "motion", thresh = "Spearman", y_min=0, y_max = 1, add_title=FALSE)
-modeltype_rg = create_plot(similarity_df, y_est = "spearman", type = "model", thresh="Spearman", y_min=0, y_max = 1, add_title=FALSE)
-contrast_rg = create_plot(similarity_df, y_est = "spearman", type = "con", thresh = "Spearman", y_min=0, y_max = 1, add_title=FALSE)
-
+fwhm_rg = create_plot(similarity_df, y_est = "spearman", type = "fwhm", thresh = "Spearman", 
+                      y_min=0, y_max = 1, y_lab = "Spearman", add_title=FALSE)
+motion_rg = create_plot(similarity_df, y_est = "spearman", type = "motion", thresh = "Spearman", 
+                        y_min=0, y_max = 1, y_lab = "Spearman", add_title=FALSE)
+modeltype_rg = create_plot(similarity_df, y_est = "spearman", type = "model", thresh="Spearman", 
+                           y_min=0, y_max = 1, y_lab = "Spearman", add_title=FALSE)
+contrast_rg = create_plot(similarity_df, y_est = "spearman", type = "con", thresh = "Spearman", 
+                          y_min=0, y_max = 1, y_lab = "Spearman", add_title=FALSE)
 
 cat("Spearman: Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast")
 (motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
@@ -751,10 +778,13 @@ cat("Spearman: Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Co
 ## Model Effieincy, ses-1
 
 ```{r, fig.width=16, fig.height=10}
-subset <- by_sample_conmod(efficiency_df, y_est = "eff_est", y_min = 0, y_max = 15)
-motion_rg = create_plot(efficiency_df, y_est = "eff_est", "motion","Efficiency", y_min = 0, y_max = 15, add_title=FALSE)
-modeltype_rg = create_plot(efficiency_df, y_est = "eff_est", "model","Efficiency", y_min = 0, y_max = 15,add_title=FALSE)
-contrast_rg = create_plot(efficiency_df, y_est = "eff_est", "con","Efficiency", y_min = 0, y_max = 15,  add_title=FALSE)
+subset <- by_sample_conmod(efficiency_df, y_est = "eff_est", y_min = 0, y_max = 15, y_lab = "Efficiency Estimate")
+motion_rg = create_plot(efficiency_df, y_est = "eff_est", "motion","Efficiency", 
+                        y_min = 0, y_max = 15, y_lab = "Efficiency Estimate", add_title=FALSE)
+modeltype_rg = create_plot(efficiency_df, y_est = "eff_est", "model","Efficiency", 
+                           y_min = 0, y_max = 15, y_lab = "Efficiency Estimate", add_title=FALSE)
+contrast_rg = create_plot(efficiency_df, y_est = "eff_est", "con","Efficiency", 
+                          y_min = 0, y_max = 15, y_lab = "Efficiency Estimate",  add_title=FALSE)
 
 
 cat("Plotting A = Motion; B = Model Parameterization, C = Contrast for Efficiency")
@@ -1191,6 +1221,10 @@ create_specr_plot(df_summ_subset, est_label)
 
 
 # ICC parameter subsampling {.tabset}
+
+We state:
+
+Aim 3: *evaluates the sample size at which the ICC stabilizes. The chosen pipeline will be based on the highest median ICC across the studies for the suprathreshold task-positive mask from Aim 1a that will be rerun for the ABCD sample. Based on this pipeline, the first-level analysis steps are repeated for N = 525 from the N = 2000 subsample for only the ABCD data. Then, voxelwise_icc within the brain_icc.py script is used to derive estimates of the median ICC, MSBS and MSWS for the between runs (e.g., measurement occasions) reliability across randomly sampled subjects for 25 to 525 subjects in intervals of 50. Similar to the methods in Liu et al. (2023), 100 iterations are performed at each N (with replacement) and the median ICC, the associated MSBS and MSWS estimates are retained from voxelwise_icc. The average and standard error across the 100 iterations is plotted for each interval of N with the y-axis representing the ICC and x-axis representing N.  The plotted values will be used to infer change and stability in the estimated median ICCs and variance components across the sample size. If stability is not achieved by N = 500, the sample is extended to N = 1,000 and the analyses are repeated.*
 
 ```{r}
 icc_subsamp_lg <- abcd_icc_subsamp %>%

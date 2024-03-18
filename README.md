@@ -37,7 +37,7 @@ The Stage 2 is the completion of the analyses (as proposed), results and discuss
 
 - Stage2_Code: Contains Python scripts, Jupyter notebooks, and cluster job files for stage 2 analysis.
   - brain_mask: Folder containing brain mask files.
-  - cluster_jobs: Cluster job files for running analyses on Sherlock (AHRB/MLS) and MSI (ABCD).
+  - [cluster_jobs](Stage2_Code/cluster_jobs/README.md): Cluster job files for running analyses on Sherlock (AHRB/MLS) and MSI (ABCD).
   - compute_icc_permutations.py: Script for computing ICC permutations (240 models).
   - compute_icc_subsample.py: Script for computing ICC subsamples (Top ICC model).
   - extract_values.py: Script for extracting values (Used to calculate mFD, % probe acc, probe response times.
