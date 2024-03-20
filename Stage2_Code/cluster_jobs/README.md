@@ -1,5 +1,8 @@
 # Cluster Jobs README file
 
+SLURM submission animated gif for AHRB data on Sherlock:
+![sbatch submission gif](./templates/animated_submissions.gif)
+
 ## Templates
 
 There are several template files used for the three samples. ABCD differs as it uses MSI and has calibration volumes to trip. 
