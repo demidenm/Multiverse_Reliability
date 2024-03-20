@@ -33,7 +33,7 @@ This project is being submitted as a Registered Report. As described by the [OSF
 registered report. Stage 1 is the submission and review of introduction, methods and proposed analyses for the publication.\
 The Stage 2 is the completion of the analyses (as proposed), results and discussion section.
 
-
+*Note: The requirements file was generated using [pipreqs](https://github.com/bndr/pipreqs)*
 
 - Stage2_Code: Contains Python scripts, Jupyter notebooks, and cluster job files for stage 2 analysis.
   - brain_mask: Folder containing brain mask files.
