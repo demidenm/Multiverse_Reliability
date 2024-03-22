@@ -2,8 +2,8 @@
 
 [![RegReport](https://img.shields.io/badge/Stage_1-Registered_Report-red
 )](https://doi.org/10.17605/OSF.IO/NQGEH)
-[![Stage 2 RegReport DOI](https://img.shields.io/badge/DOI_Stage_2-Registered_Report_TBD-blue
-)](https://doi.org)
+[![Stage 2 RegReport DOI](https://img.shields.io/badge/DOI_Stage_2-Registered_Report_Preprint-blue
+)](https://doi.org/10.1101/2024.03.19.585755)
 [![AHRB Group Maps](https://img.shields.io/badge/AHRB_Group_Maps-NeuroVault-pink
 )](https://identifiers.org/neurovault.collection:16605) 
 [![AHRB Open Data](https://img.shields.io/badge/AHRB_Open_Data-OpenNeuro-pink
