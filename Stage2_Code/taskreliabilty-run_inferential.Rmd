@@ -161,7 +161,7 @@ abcd_icc_subthresh <- read.csv("output/sample-abcd_type-run_stats-est_mask-wilso
 abcd_icc_subthresh$study <- "abcd"
 abcd_icc_suprathresh <- read.csv("output/sample-abcd_type-run_stats-est_mask-wilson-supra.tsv", sep = '\t')
 abcd_icc_suprathresh$study <- "abcd"
-abcd_icc_nacc <- read.csv("./output/sample-AHRB_type-run_stats-est_mask-nacc.tsv", sep = '\t')
+abcd_icc_nacc <- read.csv("./output/sample-abcd_type-run_stats-est_mask-nacc.tsv", sep = '\t')
 abcd_icc_nacc$study <- "abcd"
 
 # MSBS
@@ -475,6 +475,26 @@ perform_emmeans_contrasts(model)
 ```
 
 
+### Interaction: Con * Model
+
+#### HLM Model
+
+```{r}
+model_interact = lmer(avg_right ~ fwhm + motion + model * con + (1 | study), data = icc_nacc, REML = FALSE)
+tab_model(model_interact)
+```
+
+#### Tukey's emmeans
+
+```{r}
+emmeans(model_interact, ~  "model", by = "con", adjust = "sidak")
+emmip(model_interact, con ~ model, CIs = TRUE, style = "factor", 
+      dodge = .2, CIarg = list(linetype = "dashed"),
+      xlab = "Parameterization", ylab = "ICC(3,1)") + 
+  scale_color_manual(values = pal) + theme_minimal()
+
+```
+
 ### Left NAcc
 
 #### HLM Model
@@ -508,7 +528,25 @@ kable(model_summary, caption = "Model outputs for Left Nacc", booktabs = TRUE) %
 perform_emmeans_contrasts(model)
 ```
 
+### Interaction: Con * Model
 
+#### HLM Model
+
+```{r}
+model_interact = lmer(avg_left ~ fwhm + motion + model * con + (1 | study), data = icc_nacc, REML = FALSE)
+tab_model(model_interact)
+```
+
+#### Tukey's emmeans
+
+```{r}
+emmeans(model_interact, ~  "model", by = "con", adjust = "sidak")
+emmip(model_interact, con ~ model, CIs = TRUE, style = "factor", 
+      dodge = .2, CIarg = list(linetype = "dashed"),
+      xlab = "Parameterization", ylab = "ICC(3,1)") + 
+  scale_color_manual(values = pal) + theme_minimal()
+
+```
 
 ## MSBS
 
@@ -697,5 +735,3 @@ emmip(model_interact, con ~ model, CIs = TRUE, style = "factor",
   scale_color_manual(values = pal) + theme_minimal()
 
 ```
-
-

@@ -145,11 +145,11 @@ calculate_summary_stats <- function(data, variable, est_type) {
     group_by(study) %>% 
     summarise(
       "est_type" = est_type,
-      "median" = median({{variable}}),
-      "mean" = mean({{variable}}),
-      "sd" = sd({{variable}}),
-      "min" = min({{variable}}),
-      "max" = max({{variable}}) 
+      "median" = median({{variable}}, na.rm = TRUE),
+      "mean" = mean({{variable}}, na.rm = TRUE),
+      "sd" = sd({{variable}}, na.rm = TRUE),
+      "min" = min({{variable}}, na.rm = TRUE),
+      "max" = max({{variable}}, na.rm = TRUE) 
     ) %>% 
   kbl(format = "html", 
       booktabs = TRUE) %>% 
@@ -564,7 +564,7 @@ calculate_summary_stats(beh_dat %>% rename("study" = sample) %>% filter(session=
 calculate_summary_stats(beh_dat %>% rename("study" = sample) %>% filter(session=="2"), avg_acc, 
                         "Ses-1: Avg Probe Acc %")
 calculate_summary_stats(beh_dat %>% rename("study" = sample) %>% filter(session=="1"), avg_mrt, 
-                        "Ses-2: Avg Probe MRT (ms)")
+                        "Ses-1: Avg Probe MRT (ms)")
 calculate_summary_stats(beh_dat %>% rename("study" = sample) %>% filter(session=="2"), avg_mrt, 
                         "Ses-2: Avg Probe MRT (ms)")
 ```

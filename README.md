@@ -13,7 +13,7 @@
 [![MLS Open Data](https://img.shields.io/badge/MLS_Open_Data-OpenNeuro-orange
 )](https://doi.org/10.18112/openneuro.ds005027.v1.0.1)
 [![ABCD Group Maps](https://img.shields.io/badge/ABCD_Group_Maps-NeuroVault-black
-)](https://identifiers.org/neurovault.collection:16777)
+)](https://identifiers.org/neurovault.collection:17171)
 
 
 # Multiverse Reliability of the MID task

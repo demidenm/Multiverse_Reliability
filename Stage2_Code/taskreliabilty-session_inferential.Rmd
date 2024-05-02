@@ -301,7 +301,7 @@ ws_suprathresh <-  ws_suprathresh %>% mutate(
   mutate(con = gsub("-", "", con))
 
 # similarity
-similarity_df <- rbind(ahrb_similarity, mls_similarity)
+similarity_df <- rbind(ahrb_similarity, mls_similarity, abcd_similarity)
 similarity_df <-  similarity_df %>% 
   mutate(con = gsub("-", "", con))
 similarity_df$fwhm <- as.character(similarity_df$fwhm)
