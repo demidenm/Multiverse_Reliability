@@ -3,8 +3,9 @@
 sample=abcd # abcd, ahrb or mls
 ses=baselineYear1Arm1 # baselineYear1Arm1 or 2YearFollowUpArm1 for ABCD
 mask_label=None # None, wilson-sub, wilson-supra
-type=run # run or session
+type=session # run or session
 subj_ids=${1} # sub-IDs, move to temp to differentiate low/high motion mods
+n=240
 
 # if using runs, inp should be firstlvl; if using sessions, inp should be fixedeff
 if [ ${type} == 'session' ]; then
@@ -27,14 +28,13 @@ contrasts=(
 if [[ $sample == 'abcd' || $sample == 'ahrb' ]]; then
     fwhm_opt=(3.6 4.8 6.0 7.2 8.4)
 elif [[ $sample == 'mls' ]]; then
-    fwhm_opt=(3.6 4.8 6.0 7.2 8.4)
+    fwhm_opt=(3.0 4.0 5.0 6. 7.0)
 fi
 
 motion_opt=("opt1" "opt2" "opt3" "opt4") # "opt5" "opt6")
 modtype_opt=("CueMod" "AntMod" "FixMod")
 
 # Start loop to create ICC batch jobs
-n=0
 for con in ${contrasts[@]} ; do
     for fwhm in ${fwhm_opt[@]} ; do
         for motion in ${motion_opt[@]} ; do

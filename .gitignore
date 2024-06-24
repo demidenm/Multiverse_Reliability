@@ -1,5 +1,7 @@
 
 .DS_Store
+Stage2_Code/cluster_jobs/ids_subsample.tsv
+Stage2_Code/old_ipynb/
 .ipynb_checkpoints/analyze_lvl1-checkpoint.ipynb
 .ipynb_checkpoints/FirstLevel_pilot-checkpoint.ipynb
 analyze_lvl1.ipynb
@@ -34,4 +36,3 @@ Stage2_Code/cluster_jobs/logs_mls/
 Stage2_Code/.ipynb_checkpoints/
 Stage2_Code/cluster_jobs/ex_submit_grp.txt
 Stage2_Code/cluster_jobs/logs/
-Stage2_Code/test.py

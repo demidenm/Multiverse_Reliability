@@ -3,12 +3,12 @@
 curr_dir=`pwd`
 sample=abcd # abcd, ahrb or mls
 task=MID
-run=1 # 1, 2 or None (no need for leading 0, added in code
-ses=baselineYear1Arm1 # baselineYear1Arm1 or 2YearFollowUpYArm1 for ABCD
-type=session # run or session
+run=2 # 1, 2 or None (no need for leading 0, added in code
+ses=2YearFollowUpYArm1 # baselineYear1Arm1 or 2YearFollowUpYArm1 for ABCD
+type=run # run or session
 subj_list=${1}
 outfold=/scratch.global/${USER}/analyses_reliability/group_lowmotion
-counter_start=0 #0 or 60 to run run-1 & run-2 in batch
+counter_start=300 #0, 60, 120, 180, 240, 300 to run run-1 & run-2 & session in batch across both sesions
 
 if [ -z "$1" ]; then
         echo
@@ -30,7 +30,7 @@ fi
 if [[ $sample == 'abcd' || $sample == 'ahrb' ]]; then
     fwhm_opt=(3.6 4.8 6.0 7.2 8.4)
 elif [[ $sample == 'mls' ]]; then
-    fwhm_opt=(3.6 4.8 6.0 7.2 8.4)
+    fwhm_opt=(3.0 4.0 5.0 6.0 7.0)
 fi
 
 motion_opt=("opt1" "opt2" "opt3" "opt4") # "opt5" "opt6")

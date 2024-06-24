@@ -2,13 +2,13 @@
 
 subj_ids=$1
 acomp_list=$2 # tsv file, no header, col1 = sub IDs w/ sub- prefix and col2 acompcor exclusion "1" non-exclusion "0"
-ses=2YearFollowUpYArm1 #baselineYear1Arm1
+ses=baselineYear1Arm1 #2YearFollowUpYArm1 #baselineYear1Arm1
 out_dir=/scratch.global/${USER}/analyses_reliability
-analysis_type=MULTIVERSE # if running single model, change to "single"
+analysis_type=MULTIVERSE #single #MULTIVERSE # if running single model, change to: single
 fwhm=8.4
-motion=opt2
+motion=opt1
 modtype=CueMod
-count_start=143
+count_start=0
 if [ -z "$1" ]; then
 	echo
 	echo "Error: Missing list. Provide subject list w 'sub-' prefix in positon 1."

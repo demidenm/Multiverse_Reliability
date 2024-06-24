@@ -6,7 +6,7 @@ ses=ses-SESSION
 ses_r=SESSION
 sub=sub-SUBJECT
 fmriprep=fmriprep_v23_1_4
-n_vols=403
+#n_vols=403 GE Scanners had harmonization difference, so total vols is 403 + 1
 tr_sec=.800
 stc_opt=False
 task=MID
@@ -56,9 +56,10 @@ else
 fi
 
 # get volume info from the preprocessed images
-# Siemens scan = 411 volumes, Hagler et al "8 frame make up pre-scan" 411-8 = 403
+# Siemens/Philips scan = 411 volumes, Hagler et al "8 frame make up pre-scan" 411-8 = 403
+# GE v25 scan = 408 volumes and GE v26 scan =  419 volumes. Calibration is 419 - 15 = 404, 408 - 4 = 404. This modification is after May 2024 confirmation
+#  from ABCD Constortium that there was an error in the way tasks are initiated between scanners.
 echo "#### Modifying runs .nii and .tsv to match target length ####"
-target_vols=${n_vols}
 declare -A vols_run
 declare -A diff_vols_run
 declare -A len_conf_run
@@ -71,6 +72,17 @@ for run in $(seq 1 2); do
 	vols_run[$run]=$(fslinfo "${tmp_in}/${sub}/${ses}/func/${sub}_${ses}_task-MID_run-0${run}_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz" \
 		| grep -w "dim4" \
 		| awk -F" " '{ print $2 }')
+	
+	if [[ "${vols_run[$run]}" == "408" || "${vols_run[$run]}" == "419" ]]; then
+		target_vols=404
+		n_vols=404
+	elif [[ "${vols_run[$run]}" == "411" ]]; then
+		target_vols=403
+		n_vols=403
+	else
+    		echo "Error: Invalid vols_run value - "${vols_run[$run]}""
+		exit 1
+	fi
 
 	diff_vols_run[$run]=$((vols_run[$run] - target_vols))
 
