@@ -87,7 +87,7 @@ print(f"Running ICC(3,1) on {len(set1)} subjects")
 brain_models = brain_icc.voxelwise_icc(multisession_list = [set1, set2],
                                         mask=mask, icc_type='icc_3')
 
-for img_type in ['est', 'msbtwn', 'mswthn']:
+for img_type in ['est', 'btwnsub', 'wthnsub']:
     if mask_label is not None:
         out_icc_path = f'{out_path}/subs-{len(set1)}_type-{comp_type}_mask-{mask_label}_{model}_stat-{img_type}.nii.gz'
         nib.save(brain_models[img_type], out_icc_path)
