@@ -140,13 +140,13 @@ We stated:
 
 Aim1: *HLM is used to regress the median ICC on the [four] analytic decisions as fixed effects with a random intercept and random slope for study across the suprathreshold task-positive and subthreshold maps. If the model does not converge, a random intercept only model will be fit (Matuschek et al., 2017). Multiple comparisons corrections are applied using the Tukey adjustment as implemented in the emmeans package (Lenth et al., 2023). For these HLM models, the interpretation focuses on the significant, non-zero effect of an independent variable (e.g., smoothing) on the dependent *
 
-Aim2: *two HLMs are used to regress the MSBS and MSWS from the median ICC estimate on the [four] analytic decisions as fixed effects with a random intercept and random slope for study across the suprathreshold task-positive and subthreshold maps. If the model does not converge, a random intercept only model will be fit. Multiple comparisons corrections are applied using the Tukey adjustment. Like Aim 1, the interpretation focuses on the significant, non-zero effect of an independent variable (e.g., smoothing) on the dependent variable (e.g., median ICC) while the remaining independent variables are assumed to be zero.*
+Aim2: *two HLMs are used to regress the Between Subject and Within Subject from the median ICC estimate on the [four] analytic decisions as fixed effects with a random intercept and random slope for study across the suprathreshold task-positive and subthreshold maps. If the model does not converge, a random intercept only model will be fit. Multiple comparisons corrections are applied using the Tukey adjustment. Like Aim 1, the interpretation focuses on the significant, non-zero effect of an independent variable (e.g., smoothing) on the dependent variable (e.g., median ICC) while the remaining independent variables are assumed to be zero.*
 
 **group similarity**
 
 We stated:
 
-Aim1: *two HLMs are used to regress the MSBS and MSWS from the median ICC estimate on the [four] analytic decisions as fixed effects with a random intercept and random slope for study across the suprathreshold task-positive and subthreshold maps. If the model does not converge, a random intercept only model will be fit. Multiple comparisons corrections are applied using the Tukey adjustment. Like Aim 1, the interpretation focuses on the significant, non-zero effect of an independent variable (e.g., smoothing) on the dependent variable (e.g., median ICC) while the remaining independent variables are assumed to be zero.*
+Aim1: *two HLMs are used to regress the Between Subject and Within Subject from the median ICC estimate on the [four] analytic decisions as fixed effects with a random intercept and random slope for study across the suprathreshold task-positive and subthreshold maps. If the model does not converge, a random intercept only model will be fit. Multiple comparisons corrections are applied using the Tukey adjustment. Like Aim 1, the interpretation focuses on the significant, non-zero effect of an independent variable (e.g., smoothing) on the dependent variable (e.g., median ICC) while the remaining independent variables are assumed to be zero.*
 
 ***
 ***
@@ -164,12 +164,12 @@ abcd_icc_suprathresh$study <- "abcd"
 abcd_icc_nacc <- read.csv("./output/sample-abcd_type-run_stats-est_mask-nacc.tsv", sep = '\t')
 abcd_icc_nacc$study <- "abcd"
 
-# MSBS
+# Between Subject
 abcd_bs_subthresh <- read.csv("output/sample-abcd_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
 abcd_bs_subthresh$study <- "abcd"
 abcd_bs_suprathresh <- read.csv("output/sample-abcd_type-run_stats-bs_mask-wilson-supra.tsv", sep = '\t')
 abcd_bs_suprathresh$study <- "abcd"
-# MSWS
+# Within Subject
 abcd_ws_subthresh <- read.csv("output/sample-abcd_type-run_stats-ws_mask-wilson-sub.tsv", sep = '\t')
 abcd_ws_subthresh$study <- "abcd"
 abcd_ws_suprathresh <- read.csv("output/sample-abcd_type-run_stats-ws_mask-wilson-supra.tsv", sep = '\t')
@@ -190,12 +190,12 @@ ahrb_icc_suprathresh <- read.csv("output/sample-AHRB_type-run_stats-est_mask-wil
 ahrb_icc_suprathresh$study <- "ahrb"
 ahrb_icc_nacc <- read.csv("./output/sample-AHRB_type-run_stats-est_mask-nacc.tsv", sep = '\t')
 ahrb_icc_nacc$study <- "ahrb"
-# MSBS
+# Between Subject
 ahrb_bs_subthresh <- read.csv("output/sample-AHRB_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
 ahrb_bs_subthresh$study <- "ahrb"
 ahrb_bs_suprathresh <- read.csv("output/sample-AHRB_type-run_stats-bs_mask-wilson-supra.tsv", sep = '\t')
 ahrb_bs_suprathresh$study <- "ahrb"
-# MSWS
+# Within Subject
 ahrb_ws_subthresh <- read.csv("output/sample-AHRB_type-run_stats-ws_mask-wilson-sub.tsv", sep = '\t')
 ahrb_ws_subthresh$study <- "ahrb"
 ahrb_ws_suprathresh <- read.csv("output/sample-AHRB_type-run_stats-ws_mask-wilson-supra.tsv", sep = '\t')
@@ -220,7 +220,7 @@ mls_icc_nacc <- read.csv("./output/sample-MLS_type-run_stats-est_mask-nacc.tsv",
 mls_icc_nacc$study <- "mls"
 mls_icc_nacc <- update_mls_fwhm(mls_icc_nacc)
 
-# MSBS
+# Between Subject
 mls_bs_subthresh <- read.csv("output/sample-MLS_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
 mls_bs_subthresh$study <- "mls"
 mls_bs_subthresh <- update_mls_fwhm(mls_bs_subthresh)
@@ -229,7 +229,7 @@ mls_bs_suprathresh <- read.csv("output/sample-MLS_type-run_stats-bs_mask-wilson-
 mls_bs_suprathresh$study <- "mls"
 mls_bs_suprathresh <- update_mls_fwhm(mls_bs_suprathresh)
 
-# MSWS
+# Within Subject
 mls_ws_subthresh <- read.csv("output/sample-MLS_type-run_stats-ws_mask-wilson-sub.tsv", sep = '\t')
 mls_ws_subthresh$study <- "mls"
 mls_ws_subthresh <- update_mls_fwhm(mls_ws_subthresh)
@@ -282,7 +282,7 @@ icc_nacc <-  icc_nacc %>% mutate(
   ) %>% 
   mutate(con = gsub("-", "", con))
 
-# MSBS
+# Between Subject
 bs_subthresh <- rbind(abcd_bs_subthresh, ahrb_bs_subthresh, mls_bs_subthresh)
 bs_subthresh <- bs_subthresh %>% mutate(
     con = gsub("contrast-", "", con),
@@ -300,7 +300,7 @@ bs_suprathresh <-  bs_suprathresh %>% mutate(
   ) %>% 
   mutate(con = gsub("-", "", con))
 
-# MSWS
+# Within Subject
 ws_subthresh <- rbind(abcd_ws_subthresh, ahrb_ws_subthresh, mls_ws_subthresh)
 ws_subthresh <- ws_subthresh %>% mutate(
     con = gsub("contrast-", "", con),
@@ -548,7 +548,7 @@ emmip(model_interact, con ~ model, CIs = TRUE, style = "factor",
 
 ```
 
-## MSBS
+## Between Subject
 
 ### suprathreshold
 
@@ -563,7 +563,7 @@ tab_model(model)
 ```{r warning=FALSE}
 model_summary <- compare_models(full_model = model, full_data = bs_suprathresh, full_r2 = orig_r2)
 
-kable(model_summary, caption = "Model outputs for Supra-threshold MSBS", booktabs = TRUE) %>%
+kable(model_summary, caption = "Model outputs for Supra-threshold Between Subject", booktabs = TRUE) %>%
   kable_styling(font_size = 12, position = 'center',html_font = "Times New Roman")
 ```
 
@@ -587,7 +587,7 @@ tab_model(model_sub)
 ```{r warning=FALSE}
 model_summary <- compare_models(full_model = model_sub, full_data = bs_subthresh, full_r2 = orig_r2_sub)
 
-kable(model_summary, caption = "Model outputs for Sub-threshold MSBS", booktabs = TRUE) %>%
+kable(model_summary, caption = "Model outputs for Sub-threshold Between Subject", booktabs = TRUE) %>%
   kable_styling(font_size = 12, position = 'center',html_font = "Times New Roman")
 ```
 
@@ -597,7 +597,7 @@ kable(model_summary, caption = "Model outputs for Sub-threshold MSBS", booktabs 
 perform_emmeans_contrasts(model_sub)
 ```
 
-## MSWS
+## Within Subject
 
 ### suprathreshold
 
@@ -613,7 +613,7 @@ tab_model(model)
 ```{r warning=FALSE}
 model_summary <- compare_models(full_model = model, full_data = ws_suprathresh, full_r2 = orig_r2)
 
-kable(model_summary, caption = "Model outputs for Supra-threshold MSWS", booktabs = TRUE) %>%
+kable(model_summary, caption = "Model outputs for Supra-threshold Within Subject", booktabs = TRUE) %>%
   kable_styling(font_size = 12, position = 'center',html_font = "Times New Roman")
 ```
 
@@ -636,7 +636,7 @@ tab_model(model_sub)
 ```{r warning=FALSE}
 model_summary <- compare_models(full_model = model_sub, full_data = ws_subthresh, full_r2 = orig_r2_sub)
 
-kable(model_summary, caption = "Model outputs for Sub-threshold MSWS", booktabs = TRUE) %>%
+kable(model_summary, caption = "Model outputs for Sub-threshold Within Subject", booktabs = TRUE) %>%
   kable_styling(font_size = 12, position = 'center',html_font = "Times New Roman")
 ```
 
@@ -735,3 +735,4 @@ emmip(model_interact, con ~ model, CIs = TRUE, style = "factor",
   scale_color_manual(values = pal) + theme_minimal()
 
 ```
+

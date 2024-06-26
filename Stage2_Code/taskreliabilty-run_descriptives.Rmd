@@ -171,9 +171,9 @@ Aim1: *the range and distribution of median ICCs across each study (three) and a
 
 *to visualize the ordered median ICCs across the 360 model permutations for suprathreshold task-positive and subthreshold ICCs, specification curve analyses are used (Simonsohn et al., 2020). Specifically, results across the 360 model permutations are reported using a specification curve to represent the range of estimated effects across the variable permutations. This consists of two panels: Panel A represents the ordered ICC coefficients and the ICC’s associated 95% confidence interval colored based on no significance (gray), negative (red) or positive (blue) significance from the Null (Null here is 0) and Panel B represents the analytic decisions from each of the four categories (see Table 1) that produced the median ICC estimates. In the main text, to compare the highest and lowest ICC’s produced by the model permutations, the 25th percentile and 75th percentile median ICC estimates from the 360 models are reported separately for suprathreshold task-positive and subthreshold activation (the specification curve for all ICC estimates for suprathreshold task-positive and subthreshold activation are provided as supplemental information).*
 
-Aim2: *the range and distribution of median MSBS and MSWS across each study and analytic decision category are plotted across suprathreshold task-positive and subthreshold ICCs using Rainclouds.*
+Aim2: *the range and distribution of median Between Subject and Within Subject across each study and analytic decision category are plotted across suprathreshold task-positive and subthreshold ICCs using Rainclouds.*
 
-*two separate specification curve analyses report the ordered median MSBS and MSWS coefficients in one panel and the analytic decisions that produced the MSBS and MSWS estimates in a second panel separately for suprathreshold task-positive and subthreshold activation*
+*two separate specification curve analyses report the ordered median Between Subject and Within Subject coefficients in one panel and the analytic decisions that produced the Between Subject and Within Subject estimates in a second panel separately for suprathreshold task-positive and subthreshold activation*
 
 **group similarity**
 
@@ -196,12 +196,12 @@ abcd_icc_suprathresh$study <- "abcd"
 abcd_icc_nacc <- read.csv("./output/sample-abcd_type-run_stats-est_mask-nacc.tsv", sep = '\t')
 abcd_icc_nacc$study <- "abcd"
 
-# MSBS
+# Between Subject
 abcd_bs_subthresh <- read.csv("./output/sample-abcd_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
 abcd_bs_subthresh$study <- "abcd"
 abcd_bs_suprathresh <- read.csv("./output/sample-abcd_type-run_stats-bs_mask-wilson-supra.tsv", sep = '\t')
 abcd_bs_suprathresh$study <- "abcd"
-# MSWS
+# Within Subject
 abcd_ws_subthresh <- read.csv("./output/sample-abcd_type-run_stats-ws_mask-wilson-sub.tsv", sep = '\t')
 abcd_ws_subthresh$study <- "abcd"
 abcd_ws_suprathresh <- read.csv("./output/sample-abcd_type-run_stats-ws_mask-wilson-supra.tsv", sep = '\t')
@@ -236,12 +236,12 @@ ahrb_icc_suprathresh$study <- "ahrb"
 ahrb_icc_nacc <- read.csv("./output/sample-AHRB_type-run_stats-est_mask-nacc.tsv", sep = '\t')
 ahrb_icc_nacc$study <- "ahrb"
 
-# MSBS
+# Between Subject
 ahrb_bs_subthresh <- read.csv("./output/sample-AHRB_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
 ahrb_bs_subthresh$study <- "ahrb"
 ahrb_bs_suprathresh <- read.csv("./output/sample-AHRB_type-run_stats-bs_mask-wilson-supra.tsv", sep = '\t')
 ahrb_bs_suprathresh$study <- "ahrb"
-# MSWS
+# Within Subject
 ahrb_ws_subthresh <- read.csv("./output/sample-AHRB_type-run_stats-ws_mask-wilson-sub.tsv", sep = '\t')
 ahrb_ws_subthresh$study <- "ahrb"
 ahrb_ws_suprathresh <- read.csv("./output/sample-AHRB_type-run_stats-ws_mask-wilson-supra.tsv", sep = '\t')
@@ -276,7 +276,7 @@ mls_icc_nacc$study <- "mls"
 mls_icc_nacc <- update_mls_fwhm(mls_icc_nacc)
 
 
-# MSBS
+# Between Subject
 mls_bs_subthresh <- read.csv("./output/sample-MLS_type-run_stats-bs_mask-wilson-sub.tsv", sep = '\t')
 mls_bs_subthresh$study <- "mls"
 mls_bs_subthresh <- update_mls_fwhm(mls_bs_subthresh)
@@ -285,7 +285,7 @@ mls_bs_suprathresh <- read.csv("./output/sample-MLS_type-run_stats-bs_mask-wilso
 mls_bs_suprathresh$study <- "mls"
 mls_bs_suprathresh <- update_mls_fwhm(mls_bs_suprathresh)
 
-# MSWS
+# Within Subject
 mls_ws_subthresh <- read.csv("./output/sample-MLS_type-run_stats-ws_mask-wilson-sub.tsv", sep = '\t')
 mls_ws_subthresh$study <- "mls"
 mls_ws_subthresh <- update_mls_fwhm(mls_ws_subthresh)
@@ -348,7 +348,7 @@ icc_nacc <-  icc_nacc %>% mutate(
   mutate(con = gsub("-", "", con))
 
 
-# MSBS
+# Between Subject
 bs_subthresh <- rbind(abcd_bs_subthresh, ahrb_bs_subthresh, mls_bs_subthresh)
 bs_subthresh <- bs_subthresh %>% mutate(
     con = gsub("contrast-", "", con),
@@ -366,7 +366,7 @@ bs_suprathresh <-  bs_suprathresh %>% mutate(
   ) %>% 
   mutate(con = gsub("-", "", con))
 
-# MSWS
+# Within Subject
 ws_subthresh <- rbind(abcd_ws_subthresh, ahrb_ws_subthresh, mls_ws_subthresh)
 ws_subthresh <- ws_subthresh %>% mutate(
     con = gsub("contrast-", "", con),
@@ -477,7 +477,7 @@ result_df %>%
 
 # Plot distributions {.tabset}
 
-Below, running the steps to summarize the different Intraclass correlation (ICC), Mean Squared Between Subject (MSBS), Mean Square Within Subject (MSWS), and jaccard and spearman similarty for the model combinations `r 5*6*3*4` across samples
+Below, running the steps to summarize the different Intraclass correlation (ICC), Mean Squared Between Subject (Between Subject), Mean Square Within Subject (Within Subject), and jaccard and spearman similarty for the model combinations `r 5*6*3*4` across samples
 
 ## ICC
 
@@ -551,22 +551,22 @@ cat("Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast for
 (motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
 ```
 
-## MSBS
+## Between Subject
 
 Plotting overall and for each of [four] categories
 
 ### Subthreshold Mask
 
 ```{r, fig.width=16, fig.height=10}
-subset <- by_sample_conmod(bs_subthresh, y_est = "median_est", y_min=0, y_max=7, y_lab = "Median MSBS")
+subset <- by_sample_conmod(bs_subthresh, y_est = "median_est", y_min=-.01, y_max=2, y_lab = "Median Between Subject")
 fwhm_rg = create_plot(bs_subthresh, y_est = "median_est", type = "fwhm",  thresh = "sub-threshold", 
-                      y_min=0, y_max=7, y_lab = "Median MSBS", add_title=FALSE)
+                      y_min=-.01, y_max=2, y_lab = "Median Between Subject", add_title=FALSE)
 motion_rg = create_plot(bs_subthresh, y_est = "median_est", type = "motion", thresh = "sub-threshold", 
-                        y_min=0, y_max=7, y_lab = "Median MSBS", add_title=FALSE)
+                        y_min=-.01, y_max=2, y_lab = "Median Between Subject", add_title=FALSE)
 modeltype_rg = create_plot(bs_subthresh, y_est = "median_est", type = "model", thresh = "sub-threshold",
-                           y_min=0, y_max=7, y_lab = "Median MSBS", add_title=FALSE)
+                           y_min=-.01, y_max=2, y_lab = "Median Between Subject", add_title=FALSE)
 contrast_rg = create_plot(bs_subthresh, y_est = "median_est", type = "con", thresh = "sub-threshold", 
-                          y_min=0, y_max=7, y_lab = "Median MSBS", add_title=FALSE)
+                          y_min=-.01, y_max=2, y_lab = "Median Between Subject", add_title=FALSE)
 
 cat("Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast for sub-threshold mask")
 (motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
@@ -576,15 +576,15 @@ subset
 ### Suprathreshold Mask
 
 ```{r, fig.width=16, fig.height=10}
-subset <- by_sample_conmod(bs_suprathresh, y_est = "median_est", y_min=0, y_max=7, y_lab = "Median MSBS")
+subset <- by_sample_conmod(bs_suprathresh, y_est = "median_est", y_min=-1, y_max=2, y_lab = "Median Between Subject")
 fwhm_rg = create_plot(bs_suprathresh, y_est = "median_est", type = "fwhm",  thresh = "supra-threshold", 
-                      y_min=0, y_max=7, y_lab = "Median MSBS", add_title=FALSE)
+                      y_min=-.01, y_max=2, y_lab = "Median Between Subject", add_title=FALSE)
 motion_rg = create_plot(bs_suprathresh, y_est = "median_est", type = "motion", thresh = "supra-threshold", 
-                        y_min=0, y_max=7, y_lab = "Median MSBS", add_title=FALSE)
+                        y_min=-.01, y_max=2, y_lab = "Median Between Subject", add_title=FALSE)
 modeltype_rg = create_plot(bs_suprathresh, y_est = "median_est", type = "model", thresh = "supra-threshold",
-                           y_min=0, y_max=7, y_lab = "Median MSBS", add_title=FALSE)
+                           y_min=-.01, y_max=2, y_lab = "Median Between Subject", add_title=FALSE)
 contrast_rg = create_plot(bs_suprathresh, y_est = "median_est", type = "con", thresh = "supra-threshold", 
-                          y_min=0, y_max=7, y_lab = "Median MSBS", add_title=FALSE)
+                          y_min=-.01, y_max=2, y_lab = "Median Between Subject", add_title=FALSE)
 
 
 cat("Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast for supra-threshold mask")
@@ -593,22 +593,22 @@ subset
 ```
 
 
-## MSWS
+## Within Subject
 
 Plotting overall and for each of [four] categories
 
 ### Subthreshold Mask
 
 ```{r, fig.width=16, fig.height=10}
-subset <- by_sample_conmod(ws_subthresh, y_est = "median_est", y_min=0, y_max=7, y_lab = "Median MSWS")
+subset <- by_sample_conmod(ws_subthresh, y_est = "median_est", y_min=0, y_max=7, y_lab = "Median Within Subject")
 fwhm_rg = create_plot(ws_subthresh, y_est = "median_est", type = "fwhm",  thresh = "sub-threshold", 
-                      y_min=0, y_max=7, y_lab = "Median MSWS", add_title=FALSE)
+                      y_min=0, y_max=7, y_lab = "Median Within Subject", add_title=FALSE)
 motion_rg = create_plot(ws_subthresh, y_est = "median_est", type = "motion", thresh = "sub-threshold", 
-                        y_min=0, y_max=7, y_lab = "Median MSWS", add_title=FALSE)
+                        y_min=0, y_max=7, y_lab = "Median Within Subject", add_title=FALSE)
 modeltype_rg = create_plot(ws_subthresh, y_est = "median_est", type = "model", thresh = "sub-threshold",
-                           y_min=0, y_max=7, y_lab = "Median MSWS", add_title=FALSE)
+                           y_min=0, y_max=7, y_lab = "Median Within Subject", add_title=FALSE)
 contrast_rg = create_plot(ws_subthresh, y_est = "median_est", type = "con", thresh = "sub-threshold", 
-                          y_min=0, y_max=7, y_lab = "Median MSWS", add_title=FALSE)
+                          y_min=0, y_max=7, y_lab = "Median Within Subject", add_title=FALSE)
 
 cat("Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast for sub-threshold mask")
 (motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
@@ -618,15 +618,15 @@ subset
 ### Suprathreshold Mask
 
 ```{r, fig.width=16, fig.height=10}
-subset <- by_sample_conmod(ws_suprathresh, y_est = "median_est", y_min=0, y_max=7, y_lab = "Median MSWS")
+subset <- by_sample_conmod(ws_suprathresh, y_est = "median_est", y_min=0, y_max=7, y_lab = "Median Within Subject")
 fwhm_rg = create_plot(ws_suprathresh, y_est = "median_est", type = "fwhm",  thresh = "supra-threshold", 
-                      y_min=0, y_max=7, y_lab = "Median MSWS", add_title=FALSE)
+                      y_min=0, y_max=7, y_lab = "Median Within Subject", add_title=FALSE)
 motion_rg = create_plot(ws_suprathresh, y_est = "median_est", type = "motion", thresh = "supra-threshold", 
-                        y_min=0, y_max=7, y_lab = "Median MSWS", add_title=FALSE)
+                        y_min=0, y_max=7, y_lab = "Median Within Subject", add_title=FALSE)
 modeltype_rg = create_plot(ws_suprathresh, y_est = "median_est", type = "model", thresh = "supra-threshold",
-                           y_min=0, y_max=7, y_lab = "Median MSWS", add_title=FALSE)
+                           y_min=0, y_max=7, y_lab = "Median Within Subject", add_title=FALSE)
 contrast_rg = create_plot(ws_suprathresh, y_est = "median_est", type = "con", thresh = "supra-threshold", 
-                          y_min=0, y_max=7, y_lab = "Median MSWS", add_title=FALSE)
+                          y_min=0, y_max=7, y_lab = "Median Within Subject", add_title=FALSE)
 
 cat("Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Contrast for supra-threshold mask")
 (motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
@@ -687,7 +687,7 @@ cohens_sim <- gather(similarity_df, key = "Run", value = "spearman", run1_icc_co
 ```
 
 ```{r, fig.width=16, fig.height=10}
-cat("\tICC, MSBS and MSWS median, miniumum and maximum")
+cat("\tICC, Between Subject and Within Subject median, miniumum and maximum")
 calculate_summary_stats(similarity_df, run1_icc_cohensd, "ICC ~ R1 Cohen's D")
 calculate_summary_stats(similarity_df, run2_icc_cohensd, "ICC ~ R2 Cohen's D")
 ```
@@ -775,6 +775,79 @@ cat("Spearman: Plotting A = Motion; B = FWHM; C = Model Parameterization, D = Co
 (motion_rg | fwhm_rg) / (modeltype_rg | contrast_rg) + plot_annotation(tag_levels = c("A","B","C","D")) & theme(plot.tag = element_text(size = 30, face = "bold")) 
 ```
 
+## Dev Comp.
+
+### Full 
+
+```{r}
+older <- icc_suprathresh %>% filter(study %in% c('mls', 'ahrb')) 
+younger <- icc_suprathresh %>% filter(study == 'abcd') 
+
+cat("Comparing (x) older samples AHRB/MLS (n = ", nrow(older),")", "versus (y) younger sample ABCD (n = ", nrow(younger),")")
+
+t.test(older$median_est, younger$median_est)
+effectsize::cohens_d(older$median_est, younger$median_est, pooled = TRUE)
+```
+
+### FWHM 
+
+```{r}
+filtered_df <- icc_suprathresh %>%
+  filter(motion == 'opt1' & model == 'CueMod' & con == 'LgainNeut')
+
+older <- filtered_df %>% filter(study %in% c('mls', 'ahrb')) 
+younger <- filtered_df %>% filter(study == 'abcd') 
+
+cat("Comparing (x) older samples AHRB/MLS (n = ", nrow(older),")", "versus (y) younger sample ABCD (n = ", nrow(younger),")")
+t.test(older$median_est, younger$median_est)
+effectsize::cohens_d(older$median_est, younger$median_est, pooled = TRUE)
+```
+
+### Model Parameterization 
+
+```{r}
+filtered_df <- icc_suprathresh %>%
+  filter(motion == 'opt1' & fwhm == '4.8' & con == 'LgainNeut')
+
+# Separate the fwhm values based on study groups
+older <- filtered_df %>% filter(study %in% c('mls', 'ahrb')) 
+younger <- filtered_df %>% filter(study == 'abcd') 
+
+cat("Comparing (x) older samples AHRB/MLS (n = ", nrow(older),")", "versus (y) younger sample ABCD (n = ", nrow(younger),")")
+t.test(older$median_est, younger$median_est)
+effectsize::cohens_d(older$median_est, younger$median_est, pooled = TRUE)
+```
+
+### Contrasts
+
+```{r}
+filtered_df <- icc_suprathresh %>%
+  filter(con == 'LgainNeut' & fwhm == '3.6' & model == 'FixMod')
+
+# Separate the fwhm values based on study groups
+older <- filtered_df %>% filter(study %in% c('mls', 'ahrb')) 
+younger <- filtered_df %>% filter(study == 'abcd') 
+
+cat("Comparing (x) older samples AHRB/MLS (n = ", nrow(older),")", "versus (y) younger sample ABCD (n = ", nrow(younger),")")
+t.test(older$median_est, younger$median_est)
+effectsize::cohens_d(older$median_est, younger$median_est, pooled = TRUE)
+```
+
+### Motion
+
+```{r}
+filtered_df <- icc_suprathresh %>%
+  filter(con == 'LgainNeut' & fwhm == '3.6' & model == 'FixMod')
+
+# Separate the fwhm values based on study groups
+older <- filtered_df %>% filter(study %in% c('mls', 'ahrb')) 
+younger <- filtered_df %>% filter(study == 'abcd') 
+
+cat("Comparing (x) older samples AHRB/MLS (n = ", nrow(older),")", "versus (y) younger sample ABCD (n = ", nrow(younger),")")
+t.test(older$median_est, younger$median_est)
+effectsize::cohens_d(older$median_est, younger$median_est, pooled = TRUE)
+```
+
 ## Model Effieincy, ses-1
 
 ```{r, fig.width=16, fig.height=10}
@@ -799,19 +872,19 @@ subset
 
 ```{r}
 cat("Subthreshold mask")
-cat("\tICC, MSBS and MSWS median, miniumum and maximum")
+cat("\tICC, Between Subject and Within Subject median, miniumum and maximum")
 calculate_summary_stats(icc_subthresh, median_est, "ICC")
-calculate_summary_stats(bs_subthresh, median_est, "MSBS")
-calculate_summary_stats(ws_subthresh, median_est, "MSWS")
+calculate_summary_stats(bs_subthresh, median_est, "Between Subject")
+calculate_summary_stats(ws_subthresh, median_est, "Within Subject")
 ```
 
 ## Suprathreshold
 ```{r message=FALSE, warning=FALSE}
 cat("Suprathreshold mask")
-cat("\tICC, MSBS and MSWS median, miniumum and maximum")
+cat("\tICC, Between Subject and Within Subject median, miniumum and maximum")
 calculate_summary_stats(icc_suprathresh, median_est, "ICC")
-calculate_summary_stats(bs_suprathresh, median_est, "MSBS")
-calculate_summary_stats(ws_suprathresh, median_est, "MSWS")
+calculate_summary_stats(bs_suprathresh, median_est, "Between Subject")
+calculate_summary_stats(ws_suprathresh, median_est, "Within Subject")
 ```
 
 ## simlarity
@@ -975,7 +1048,7 @@ create_specr_plot(df_summ, est_label)
 ```
 
 
-## MSBS
+## Between Subject
 
 ### suprathreshold 
 
@@ -995,7 +1068,7 @@ df_summ <- bs_suprathresh %>%
   separate(col = model_type, into = c("fwhm","motion","contrast","model"), sep = "_|-", remove = FALSE)
 
 # plot
-est_label = "supra-threshold MSBS"
+est_label = "supra-threshold Between Subject"
 create_specr_plot(df_summ, est_label)
 ```
 
@@ -1012,7 +1085,7 @@ df_summ_subset = df_summ %>%
   filter(estimate < bot_25q | estimate > top_75q)
 
 # subset plots
-est_label = "supra-threshold MSBS"
+est_label = "supra-threshold Between Subject"
 create_specr_plot(df_summ_subset, est_label)
 ```
 
@@ -1035,7 +1108,7 @@ df_summ <- bs_subthresh %>%
   separate(col = model_type, into = c("fwhm","motion","contrast","model"), sep = "_|-", remove = FALSE)
 
 # plot
-est_label = "sub-threshold MSBS"
+est_label = "sub-threshold Between Subject"
 create_specr_plot(df_summ, est_label)
 ```
 
@@ -1052,12 +1125,12 @@ df_summ_subset = df_summ %>%
   filter(estimate < bot_25q | estimate > top_75q)
 
 # subset plots
-est_label = "suprathreshold MSBS"
+est_label = "suprathreshold Between Subject"
 create_specr_plot(df_summ_subset, est_label)
 ```
 
 
-## MSWS
+## Within Subject
 
 ### suprathreshold 
 
@@ -1077,7 +1150,7 @@ df_summ <- ws_suprathresh %>%
   separate(col = model_type, into = c("fwhm","motion","contrast","model"), sep = "_|-", remove = FALSE)
 
 # plot
-est_label = "supra-threshold MSWS"
+est_label = "supra-threshold Within Subject"
 create_specr_plot(df_summ, est_label)
 ```
 
@@ -1094,7 +1167,7 @@ df_summ_subset = df_summ %>%
   filter(estimate < bot_25q | estimate > top_75q)
 
 # subset plots
-est_label = "supra-threshold MSWS"
+est_label = "supra-threshold Within Subject"
 create_specr_plot(df_summ_subset, est_label)
 ```
 
@@ -1117,7 +1190,7 @@ df_summ <- ws_subthresh %>%
   separate(col = model_type, into = c("fwhm","motion","contrast","model"), sep = "_|-", remove = FALSE)
 
 # plot
-est_label = "sub-threshold MSWS"
+est_label = "sub-threshold Within Subject"
 create_specr_plot(df_summ, est_label)
 ```
 
@@ -1134,7 +1207,7 @@ df_summ_subset = df_summ %>%
   filter(estimate < bot_25q | estimate > top_75q)
 
 # subplot
-est_label = "sub-threshold MSWS"
+est_label = "sub-threshold Within Subject"
 create_specr_plot(df_summ_subset, est_label)
 ```
 
@@ -1224,7 +1297,7 @@ create_specr_plot(df_summ_subset, est_label)
 
 We state:
 
-Aim 3: *evaluates the sample size at which the ICC stabilizes. The chosen pipeline will be based on the highest median ICC across the studies for the suprathreshold task-positive mask from Aim 1a that will be rerun for the ABCD sample. Based on this pipeline, the first-level analysis steps are repeated for N = 525 from the N = 2000 subsample for only the ABCD data. Then, voxelwise_icc within the brain_icc.py script is used to derive estimates of the median ICC, MSBS and MSWS for the between runs (e.g., measurement occasions) reliability across randomly sampled subjects for 25 to 525 subjects in intervals of 50. Similar to the methods in Liu et al. (2023), 100 iterations are performed at each N (with replacement) and the median ICC, the associated MSBS and MSWS estimates are retained from voxelwise_icc. The average and standard error across the 100 iterations is plotted for each interval of N with the y-axis representing the ICC and x-axis representing N.  The plotted values will be used to infer change and stability in the estimated median ICCs and variance components across the sample size. If stability is not achieved by N = 500, the sample is extended to N = 1,000 and the analyses are repeated.*
+Aim 3: *evaluates the sample size at which the ICC stabilizes. The chosen pipeline will be based on the highest median ICC across the studies for the suprathreshold task-positive mask from Aim 1a that will be rerun for the ABCD sample. Based on this pipeline, the first-level analysis steps are repeated for N = 525 from the N = 2000 subsample for only the ABCD data. Then, voxelwise_icc within the brain_icc.py script is used to derive estimates of the median ICC, Between Subject and Within Subject for the between runs (e.g., measurement occasions) reliability across randomly sampled subjects for 25 to 525 subjects in intervals of 50. Similar to the methods in Liu et al. (2023), 100 iterations are performed at each N (with replacement) and the median ICC, the associated Between Subject and Within Subject estimates are retained from voxelwise_icc. The average and standard error across the 100 iterations is plotted for each interval of N with the y-axis representing the ICC and x-axis representing N.  The plotted values will be used to infer change and stability in the estimated median ICCs and variance components across the sample size. If stability is not achieved by N = 500, the sample is extended to N = 1,000 and the analyses are repeated.*
 
 ```{r}
 icc_subsamp_lg <- abcd_icc_subsamp %>%
@@ -1315,10 +1388,10 @@ ggplot() +
   theme_minimal()
 ```
 
-## MSBW
+## Between Subject
 
 ```{r}
-msbs_summary <- icc_subsamp_lg %>%
+between_sub <- icc_subsamp_lg %>%
   group_by(mask,subsample_n) %>%
   summarize(mean_msbthn = mean(msbtwn),
             lower_ci = quantile(msbtwn, 0.025),
@@ -1328,13 +1401,13 @@ ggplot() +
   # add individual lines of ICC fo subsample_n + add mean
   geom_path(data = icc_subsamp_lg, aes(x = subsample_n, y = msbtwn, group = as.factor(seed)),
             alpha = 0.1) +  # Use geom_path to connect individual points
-  geom_line(data = msbs_summary, aes(x = subsample_n, y = mean_msbthn), alpha = .5) + 
+  geom_line(data = between_sub, aes(x = subsample_n, y = mean_msbthn), alpha = .5) + 
   # create ribbon + 95CI upper/lower
-  geom_ribbon(data = msbs_summary, aes(x = subsample_n, ymin = lower_ci, ymax = upper_ci), 
+  geom_ribbon(data = between_sub, aes(x = subsample_n, ymin = lower_ci, ymax = upper_ci), 
               alpha = 0.1) +  
-  geom_line(data = msbs_summary, aes(x = subsample_n, y = lower_ci), linetype = "dashed", color = "red") +
-  geom_line(data = msbs_summary, aes(x = subsample_n, y = upper_ci), linetype = "dashed", color = "red") +  
-  labs(title = "Individual points, Mean & +/-95% CI of MSBS point estimate across 100 bootstraps at each N", 
+  geom_line(data = between_sub, aes(x = subsample_n, y = lower_ci), linetype = "dashed", color = "red") +
+  geom_line(data = between_sub, aes(x = subsample_n, y = upper_ci), linetype = "dashed", color = "red") +  
+  labs(title = "Individual points, Mean & +/-95% CI of Between Subject point estimate across 100 bootstraps at each N", 
        subtitle = paste0("N=25 (Max:", 
                         round(max(icc_subsamp_lg %>% filter(subsample_n == 25) %>% pull(msbtwn)), 2),
                         " Min:", 
@@ -1347,16 +1420,16 @@ ggplot() +
        caption = paste("N range:",
                        paste(n_range, collapse = ", "),
                        "\n100 random iterations per N"),
-       x = "", y = "Median MSBS") +
-  ylim(0, 3) +
+       x = "", y = "Median Between Subject") +
+  ylim(-0.5, 1) +
   facet_wrap(~ mask) +
   theme_minimal()
 ```
 
-## MSWS
+## Within Subject
 
 ```{r}
-msws_summary <- icc_subsamp_lg %>%
+within_subject <- icc_subsamp_lg %>%
   group_by(mask,subsample_n) %>%
   summarize(mean_mswthn = mean(mswthn),
             lower_ci = quantile(mswthn, 0.025),
@@ -1366,13 +1439,13 @@ ggplot() +
   # add individual lines of ICC fo subsample_n + add mean
   geom_path(data = icc_subsamp_lg, aes(x = subsample_n, y = mswthn, group = as.factor(seed)),
             alpha = 0.1) +  # Use geom_path to connect individual points
-  geom_line(data = msws_summary, aes(x = subsample_n, y = mean_mswthn), alpha = .5) + 
+  geom_line(data = within_subject, aes(x = subsample_n, y = mean_mswthn), alpha = .5) + 
   # create ribbon + 95CI upper/lower
-  geom_ribbon(data = msws_summary, aes(x = subsample_n, ymin = lower_ci, ymax = upper_ci), 
+  geom_ribbon(data = within_subject, aes(x = subsample_n, ymin = lower_ci, ymax = upper_ci), 
               alpha = 0.1) +  
-  geom_line(data = msws_summary, aes(x = subsample_n, y = lower_ci), linetype = "dashed", color = "red") +
-  geom_line(data = msws_summary, aes(x = subsample_n, y = upper_ci), linetype = "dashed", color = "red") +  
-  labs(title = "Individual points, Mean & +/-95% CI of MSWS point estimate across 100 bootstraps at each N", 
+  geom_line(data = within_subject, aes(x = subsample_n, y = lower_ci), linetype = "dashed", color = "red") +
+  geom_line(data = within_subject, aes(x = subsample_n, y = upper_ci), linetype = "dashed", color = "red") +  
+  labs(title = "Individual points, Mean & +/-95% CI of Within Subject point estimate across 100 bootstraps at each N", 
        subtitle = paste0("N=25 (Max:", 
                         round(max(icc_subsamp_lg %>% filter(subsample_n == 25) %>% pull(msbtwn)), 2),
                         " Min:", 
@@ -1385,8 +1458,8 @@ ggplot() +
        caption = paste("N range:",
                        paste(n_range, collapse = ", "),
                        "\n100 random iterations per N"),
-       x = "", y = "Median MSWS") +
-  ylim(0, 3) +
+       x = "", y = "Median Within Subject") +
+  ylim(-.5, 2) +
   facet_wrap(~ mask) +
   theme_minimal()
 ```
