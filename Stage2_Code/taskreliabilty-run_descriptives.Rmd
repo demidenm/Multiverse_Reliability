@@ -1384,7 +1384,7 @@ ggplot() +
                        paste(n_range, collapse = ", "),
                        "\n100 random iterations per N"),
        x = "", y = "Median ICC") +
-  ylim(0, 0.75) +
+  ylim(-.1, 1) +
   theme_minimal()
 ```
 
@@ -1420,8 +1420,8 @@ ggplot() +
        caption = paste("N range:",
                        paste(n_range, collapse = ", "),
                        "\n100 random iterations per N"),
-       x = "", y = "Median Between Subject") +
-  ylim(-0.5, 1) +
+       x = "", y = "Median BS") +
+  ylim(-0.1, 1) +
   facet_wrap(~ mask) +
   theme_minimal()
 ```
@@ -1458,8 +1458,8 @@ ggplot() +
        caption = paste("N range:",
                        paste(n_range, collapse = ", "),
                        "\n100 random iterations per N"),
-       x = "", y = "Median Within Subject") +
-  ylim(-.5, 2) +
+       x = "", y = "Median WS") +
+  ylim(-.1, 2) +
   facet_wrap(~ mask) +
   theme_minimal()
 ```
