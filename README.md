@@ -2,7 +2,7 @@
 
 [![RegReport](https://img.shields.io/badge/Stage_1-Registered_Report-red
 )](https://doi.org/10.17605/OSF.IO/NQGEH)
-[![Stage 2 RegReport DOI](https://img.shields.io/badge/DOI_Stage_2-Registered_Report_Preprint-blue
+[![Stage 2 RegReport DOI](https://img.shields.io/badge/DOI_Stage_2-Registered_Report_PCI_RR-blue
 )](https://doi.org/10.1101/2024.03.19.585755)
 [![AHRB Group Maps](https://img.shields.io/badge/AHRB_Group_Maps-NeuroVault-pink
 )](https://identifiers.org/neurovault.collection:16605) 
@@ -17,6 +17,10 @@
 
 
 # Multiverse Reliability of the MID task
+
+![Description of Image](Stage2_Code/badge_PCI_RR.png)
+Registered Report Reviewed and Accepted at PCI RR
+
 Project  Title: 
 
     Test-Retest Reliability in Functional Magnetic Resonance Imaging: Impact of Analytical Decisions on Individual and Group Estimates in the Monetary Incentive Delay Task_
@@ -27,6 +31,7 @@ Project Authors:
 
 > Respository & code maintained by: Michael Demidenko
  
+
  
 This github repository contains the Python (.py) and R scripts (.rmd/.html) that are associated with the project. \
 This project is being submitted as a Registered Report. As described by the [OSF](https://doi.org/10.17605/OSF.IO/NQGEH), there are two stages to the \
